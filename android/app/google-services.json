@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "900628982127",
+    "project_id": "bikeblues-c9a3a",
+    "storage_bucket": "bikeblues-c9a3a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:900628982127:android:ea1ea2cb1f080307a9a09a",
+        "android_client_info": {
+          "package_name": "com.example.bikeblues"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCt2zVDlPWQQ69ZGzvmFurxXZ9YckQUyc8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

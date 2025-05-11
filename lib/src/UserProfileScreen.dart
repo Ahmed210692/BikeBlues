@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:bikeblues/Authentication/SignInScreen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -19,8 +20,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController phoneNumberController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  bool _isEditing = false; // Flag to track edit mode
-  bool _isUpdated = false; // Flag to track if data is modified
+  bool _isEditing = false;
+  bool _isUpdated = false;
 
   @override
   void initState() {
@@ -31,7 +32,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     phoneNumberController.text = widget.userData['phoneNumber'] ?? '';
     passwordController.text = widget.userData['password'] ?? '';
 
-    // Add listeners to detect changes
     nameController.addListener(_checkIfUpdated);
     addressController.addListener(_checkIfUpdated);
     emailController.addListener(_checkIfUpdated);
@@ -39,7 +39,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     passwordController.addListener(_checkIfUpdated);
   }
 
-  // Method to check if any text field has been changed
   void _checkIfUpdated() {
     setState(() {
       _isUpdated = nameController.text != widget.userData['name'] ||
@@ -47,11 +46,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           emailController.text != widget.userData['email'] ||
           phoneNumberController.text != widget.userData['phoneNumber'];
           passwordController.text != widget.userData['password'] ?? '';
-
     });
   }
 
-  // Method to update profile
   Future<void> _updateProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null && _formKey.currentState!.validate()) {
@@ -62,187 +59,240 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'phoneNumber': phoneNumberController.text,
         'password':passwordController.text
       });
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Profile updated')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Profile updated successfully!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        )
+      );
       setState(() {
-        _isEditing = false; // Exit edit mode after updating
-        _isUpdated = false; // Reset the update flag
+        _isEditing = false;
+        _isUpdated = false;
       });
     }
+  }
+
+  Future<bool> _showLogoutConfirmationDialog() async {
+    return (await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Text('Are you sure you want to log out?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('No', style: TextStyle(color: Colors.grey)),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text('Yes', style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    )) ?? false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  'Change Your Profile!',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold,
+      backgroundColor: Colors.grey[50],
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        margin: EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.arrow_back_ios_new, 
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                      Text(
+                        'Personal Information',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    ],
                   ),
+                  SizedBox(height: 30),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        buildTextField(
+                          controller: nameController,
+                          label: 'Name',
+                          icon: Icons.person,
+                          readOnly: !_isEditing,
+                        ),
+                        SizedBox(height: 20),
+                        buildTextField(
+                          controller: addressController,
+                          label: 'Address',
+                          icon: Icons.home,
+                          readOnly: !_isEditing,
+                        ),
+                        SizedBox(height: 20),
+                        buildTextField(
+                          controller: emailController,
+                          label: 'Email',
+                          icon: Icons.email,
+                          readOnly: !_isEditing,
+                        ),
+                        SizedBox(height: 20),
+                        buildTextField(
+                          controller: phoneNumberController,
+                          label: 'Phone Number',
+                          icon: Icons.phone,
+                          readOnly: !_isEditing,
+                        ),
+                        SizedBox(height: 40),
+                        Container(
+                          width: double.infinity,
+                          height: 55,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _isEditing
+                                ? (_isUpdated 
+                                  ? Theme.of(context).primaryColor
+                                  : Colors.grey[400])
+                                : Colors.blue[700],
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              elevation: _isEditing && !_isUpdated ? 2 : 5,
+                              shadowColor: _isEditing
+                                ? (_isUpdated 
+                                  ? Theme.of(context).primaryColor.withOpacity(0.5)
+                                  : Colors.grey.withOpacity(0.5))
+                                : Colors.blue.withOpacity(0.5),
+                            ),
+                            onPressed: _isEditing 
+                              ? (_isUpdated ? _updateProfile : null)
+                              : () {
+                                  setState(() {
+                                    _isEditing = true;
+                                    _checkIfUpdated();
+                                  });
+                                },
+                            child: AnimatedDefaultTextStyle(
+                              duration: Duration(milliseconds: 200),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: _isEditing && !_isUpdated 
+                                  ? Colors.grey[600]
+                                  : Colors.white,
+                              ),
+                              child: Text(_isEditing ? 'Update Profile' : 'Edit Profile'),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 80), // Space for logout button
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              bottom: 20,
+              left: 16,
+              right: 16,
+              child: Container(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton.icon(
+                  icon: Icon(Icons.logout, color: Colors.white),
+                  label: Text(
+                    'Logout',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    elevation: 5,
+                  ),
+                  onPressed: () async {
+                    bool confirmLogout = await _showLogoutConfirmationDialog();
+                    if (confirmLogout) {
+                      await FirebaseAuth.instance.signOut();
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => UnifiedLoginScreen()),
+                        (route) => false,
+                      );
+                    }
+                  },
                 ),
               ),
-              SizedBox(height: 20,),
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Name', focusColor: Colors.black,
-                  prefixIcon: Icon(Icons.person, color: Color.fromRGBO(83, 221, 163, 1)),
-                  hintText: 'Enter your name',
-                  hintStyle: const TextStyle(color: Colors.black),
-
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.deepPurpleAccent),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.red),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                readOnly: !_isEditing,
-                validator: (value) => value!.isEmpty ? 'Enter your name' : null,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: addressController,
-                decoration: InputDecoration(
-                  labelText: 'Address',focusColor: Colors.black,
-                  prefixIcon: Icon(Icons.home, color: Color.fromRGBO(83, 221, 163, 1)),
-                  hintText: 'Enter your address',
-                  hintStyle: const TextStyle(color: Colors.black),
-
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.deepPurpleAccent),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.red),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                readOnly: !_isEditing,
-                validator: (value) =>
-                value!.isEmpty ? 'Enter your address' : null,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email, color: Color.fromRGBO(83, 221, 163, 1)),
-                  hintText: 'Enter your email',
-                  hintStyle: const TextStyle(color: Colors.black),
-
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.deepPurpleAccent),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.red),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                readOnly: !_isEditing,
-                validator: (value) =>
-                value!.isEmpty ? 'Enter your email' : null,
-              ),
-
-              // const SizedBox(height: 20),
-              // TextFormField(
-              //   controller: passwordController,
-              //   decoration: InputDecoration(
-              //     labelText: 'Password',
-              //     prefixIcon: Icon(Icons.lock_outline_rounded, color: Color.fromRGBO(83, 221, 163, 1)),
-              //     hintText: 'Enter your password',
-              //     hintStyle: const TextStyle(color: Colors.black),
-              //
-              //     enabledBorder: OutlineInputBorder(
-              //       borderSide: BorderSide(color: Colors.deepPurpleAccent),
-              //       borderRadius: BorderRadius.circular(18),
-              //     ),
-              //     focusedBorder: OutlineInputBorder(
-              //       borderSide: BorderSide(color: Colors.blue),
-              //       borderRadius: BorderRadius.circular(18),
-              //     ),
-              //     errorBorder: OutlineInputBorder(
-              //       borderSide: BorderSide(color: Colors.red),
-              //       borderRadius: BorderRadius.circular(18),
-              //     ),
-              //   ),
-              //   readOnly: !_isEditing,
-              //   validator: (value) =>
-              //   value!.isEmpty ? 'Enter your password' : null,
-              // ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: phoneNumberController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',focusColor: Colors.black,
-                  prefixIcon: Icon(Icons.phone, color: Color.fromRGBO(83, 221, 163, 1)),
-                  hintText: 'Enter your phone number',
-                  hintStyle: const TextStyle(color: Colors.black),
-
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.deepPurpleAccent),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.red),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                readOnly: !_isEditing,
-                validator: (value) =>
-                value!.isEmpty ? 'Enter your phone number' : null,
-              ),
-              const SizedBox(height: 40),
-              _isEditing
-                  ? ElevatedButton(
-                onPressed: _isUpdated ? _updateProfile : null,
-                child: const Text('Update Profile'),
-              )
-                  : ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _isEditing = true;
-                    _checkIfUpdated();
-                  });
-                },
-                child: const Text('Edit Profile'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required bool readOnly,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Theme.of(context).primaryColor),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: Theme.of(context).primaryColor),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+      readOnly: readOnly,
+      validator: (value) => value!.isEmpty ? 'This field is required' : null,
     );
   }
 

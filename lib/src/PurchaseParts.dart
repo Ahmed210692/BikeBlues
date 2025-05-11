@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shimmer/shimmer.dart';
 import 'FavoriteScreen.dart';
-import 'CustomUserDrawer.dart';
 import 'ProductDetails.dart';
+import 'UserChatListScreen.dart';
+import 'UserProfileScreen.dart';
 
 class PurchaseParts extends StatefulWidget {
   const PurchaseParts({super.key});
@@ -14,17 +15,26 @@ class PurchaseParts extends StatefulWidget {
   State<PurchaseParts> createState() => _PurchasePartsState();
 }
 
-class _PurchasePartsState extends State<PurchaseParts> {
+class _PurchasePartsState extends State<PurchaseParts> with SingleTickerProviderStateMixin {
   String? username;
   String searchQuery = '';
   final ScrollController _scrollController = ScrollController();
   bool _showBackToTop = false;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
+    _animationController = AnimationController(
+      vsync: this, 
+      duration: Duration(milliseconds: 300),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
     super.initState();
     _setupScrollController();
     _fetchUserDetails();
+    _animationController.forward();
   }
 
   void _setupScrollController() {
@@ -38,23 +48,69 @@ class _PurchasePartsState extends State<PurchaseParts> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   Future<void> _fetchUserDetails() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      final userDoc =
-      await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       setState(() {
         username = userDoc['name'];
       });
     }
   }
 
+  void _onItemTapped(int index) async {
+    if (index == _selectedIndex) return;
+
+    if (index == 1) {
+      // Navigate to Chats
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => UserChatListScreen()),
+      );
+      setState(() => _selectedIndex = 0); // Reset to home after returning
+      return;
+    }
+
+    if (index == 2) {
+      // Navigate to Profile
+      final userData = await _fetchUserData();
+      if (userData != null) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ProfileScreen(userData: userData)),
+        );
+      }
+      setState(() => _selectedIndex = 0); // Reset to home after returning
+      return;
+    }
+
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  Future<Map<String, dynamic>?> _fetchUserData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      return userDoc.data();
+    }
+    return null;
+  }
+
   void _navigateToFavorites() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => FavoritesScreen()));
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => FavoritesScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   Widget _buildLoadingShimmer() {
@@ -64,9 +120,9 @@ class _PurchasePartsState extends State<PurchaseParts> {
       child: GridView.builder(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 2 / 3,
+          crossAxisSpacing: 15,
+          mainAxisSpacing: 15,
+          childAspectRatio: 0.75,
         ),
         itemCount: 6,
         shrinkWrap: true,
@@ -74,7 +130,7 @@ class _PurchasePartsState extends State<PurchaseParts> {
         itemBuilder: (_, __) => Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(20),
           ),
         ),
       ),
@@ -88,110 +144,162 @@ class _PurchasePartsState extends State<PurchaseParts> {
       child: SafeArea(
         child: Scaffold(
           backgroundColor: Colors.grey[50],
-          appBar: AppBar(
-            title: Text(
-              'Products',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-                fontSize: 24,
+          bottomNavigationBar: Container(
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: Offset(0, 5),
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(25),
+              child: BottomNavigationBar(
+                items: <BottomNavigationBarItem>[
+                  BottomNavigationBarItem(
+                    icon: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _selectedIndex == 0 ? Theme.of(context).primaryColor.withOpacity(0.2) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.home_outlined),
+                    ),
+                    activeIcon: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.home),
+                    ),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _selectedIndex == 1 ? Theme.of(context).primaryColor.withOpacity(0.2) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.chat_bubble_outline),
+                    ),
+                    activeIcon: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.chat_bubble),
+                    ),
+                    label: 'Chats',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _selectedIndex == 2 ? Theme.of(context).primaryColor.withOpacity(0.2) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.person_outline),
+                    ),
+                    activeIcon: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.person),
+                    ),
+                    label: 'Profile',
+                  ),
+                ],
+                currentIndex: _selectedIndex,
+                selectedItemColor: Theme.of(context).primaryColor,
+                unselectedItemColor: Colors.grey[600],
+                selectedLabelStyle: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+                onTap: _onItemTapped,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                type: BottomNavigationBarType.fixed,
+                selectedFontSize: 14,
+                unselectedFontSize: 14,
+                iconSize: 24,
+                showSelectedLabels: true,
+                showUnselectedLabels: true,
               ),
             ),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            iconTheme: IconThemeData(color: Colors.black87),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.favorite, color: Colors.red),
-                onPressed: _navigateToFavorites,
-              ),
-            ],
           ),
-          drawer: const CustomDrawer(),
           floatingActionButton: _showBackToTop
-              ? FloatingActionButton(
-            onPressed: () {
-              _scrollController.animateTo(
-                0,
-                duration: Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-              );
-            },
-            child: Icon(Icons.arrow_upward),
-            mini: true,
-          )
+              ? FloatingActionButton.extended(
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      0,
+                      duration: Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  icon: Icon(Icons.arrow_upward, color: Colors.white),
+                  label: Text('Top', style: TextStyle(color: Colors.white)),
+                  backgroundColor: Colors.blue[700],
+                )
               : null,
           body: CustomScrollView(
             controller: _scrollController,
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Greeting Section
                       Container(
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(0xFF4E9CD4),
-                              Color(0xFF53DDA3),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blue.withOpacity(0.2),
-                              blurRadius: 15,
-                              offset: Offset(0, 5),
-                            ),
-                          ],
-                        ),
+                        padding: EdgeInsets.symmetric(vertical: 16),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
+                            Text(
+                              'Products',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                                fontSize: 26,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                             Container(
-                              padding: EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.red[50],
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Icon(
-                                Icons.waving_hand,
-                                color: Colors.white,
-                                size: 28,
+                              child: IconButton(
+                                icon: Icon(Icons.favorite, color: Colors.red[400]),
+                                onPressed: _navigateToFavorites,
                               ),
-                            ),
-                            SizedBox(width: 15),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Login To Your Account,',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  username ?? 'User',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 24,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(height: 24),
+                      SizedBox(height: 20),
 
                       // Search Bar
                       Container(
@@ -200,8 +308,8 @@ class _PurchasePartsState extends State<PurchaseParts> {
                             BoxShadow(
                               color: Colors.grey.withOpacity(0.1),
                               spreadRadius: 2,
-                              blurRadius: 10,
-                              offset: Offset(0, 3),
+                              blurRadius: 15,
+                              offset: Offset(0, 5),
                             ),
                           ],
                         ),
@@ -214,58 +322,59 @@ class _PurchasePartsState extends State<PurchaseParts> {
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,
-                            prefixIcon:
-                            Icon(Icons.search, color: Colors.blue[700]),
+                            prefixIcon: Icon(Icons.search, color: Colors.blue[700]),
                             hintText: 'Search Products...',
-                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            hintStyle: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 16,
+                            ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
+                              borderRadius: BorderRadius.circular(20),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
+                              borderRadius: BorderRadius.circular(20),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide:
-                              BorderSide(color: Colors.blue[700]!, width: 2),
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(height: 24),
+                      SizedBox(height: 30),
 
                       // Section Title
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'All Products',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'All Products',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      SizedBox(height: 16),
+                      SizedBox(height: 20),
                     ],
                   ),
                 ),
               ),
               SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 sliver: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('products')
-                      .snapshots(),
+                  stream: FirebaseFirestore.instance.collection('products').snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return SliverToBoxAdapter(
-                        child: _buildLoadingShimmer(),
-                      );
+                      return SliverToBoxAdapter(child: _buildLoadingShimmer());
                     }
 
                     if (snapshot.hasError) {
@@ -274,10 +383,15 @@ class _PurchasePartsState extends State<PurchaseParts> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.error_outline,
-                                  size: 48, color: Colors.red),
+                              Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
                               SizedBox(height: 16),
-                              Text('Something went wrong'),
+                              Text(
+                                'Something went wrong',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -287,8 +401,7 @@ class _PurchasePartsState extends State<PurchaseParts> {
                     final products = snapshot.data?.docs ?? [];
                     final filteredProducts = products.where((doc) {
                       final productData = doc.data() as Map<String, dynamic>;
-                      final productName =
-                          productData['name']?.toString().toLowerCase() ?? '';
+                      final productName = productData['name']?.toString().toLowerCase() ?? '';
                       return productName.contains(searchQuery);
                     }).toList();
 
@@ -298,10 +411,15 @@ class _PurchasePartsState extends State<PurchaseParts> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.search_off,
-                                  size: 48, color: Colors.grey),
+                              Icon(Icons.search_off, size: 60, color: Colors.grey),
                               SizedBox(height: 16),
-                              Text('No products found'),
+                              Text(
+                                'No products found',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -311,14 +429,13 @@ class _PurchasePartsState extends State<PurchaseParts> {
                     return SliverGrid(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 15,
+                        mainAxisSpacing: 15,
                         childAspectRatio: 0.75,
                       ),
                       delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                          final product = filteredProducts[index].data()
-                          as Map<String, dynamic>;
+                        (context, index) {
+                          final product = filteredProducts[index].data() as Map<String, dynamic>;
                           final productId = filteredProducts[index].id;
 
                           return Hero(
@@ -338,13 +455,13 @@ class _PurchasePartsState extends State<PurchaseParts> {
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(15),
+                                    borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.grey.withOpacity(0.1),
                                         spreadRadius: 1,
-                                        blurRadius: 10,
-                                        offset: Offset(0, 3),
+                                        blurRadius: 15,
+                                        offset: Offset(0, 5),
                                       ),
                                     ],
                                   ),
@@ -353,7 +470,7 @@ class _PurchasePartsState extends State<PurchaseParts> {
                                     children: [
                                       ClipRRect(
                                         borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(15),
+                                          top: Radius.circular(20),
                                         ),
                                         child: Stack(
                                           children: [
@@ -362,19 +479,14 @@ class _PurchasePartsState extends State<PurchaseParts> {
                                               height: 180,
                                               width: double.infinity,
                                               fit: BoxFit.cover,
-                                              loadingBuilder:
-                                                  (context, child, progress) {
-                                                if (progress == null)
-                                                  return child;
+                                              loadingBuilder: (context, child, progress) {
+                                                if (progress == null) return child;
                                                 return Container(
                                                   height: 180,
                                                   color: Colors.grey[200],
                                                   child: Center(
-                                                    child:
-                                                    CircularProgressIndicator(
-                                                      valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                          Color>(
+                                                    child: CircularProgressIndicator(
+                                                      valueColor: AlwaysStoppedAnimation<Color>(
                                                         Colors.blue[700]!,
                                                       ),
                                                     ),
@@ -387,20 +499,19 @@ class _PurchasePartsState extends State<PurchaseParts> {
                                               right: 8,
                                               child: Container(
                                                 padding: EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
+                                                  horizontal: 10,
+                                                  vertical: 6,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.black
-                                                      .withOpacity(0.7),
-                                                  borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  color: Colors.black.withOpacity(0.7),
+                                                  borderRadius: BorderRadius.circular(15),
                                                 ),
                                                 child: Text(
                                                   'RS ${product['price']}',
                                                   style: TextStyle(
                                                     color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
                                                   ),
                                                 ),
                                               ),
@@ -409,17 +520,17 @@ class _PurchasePartsState extends State<PurchaseParts> {
                                         ),
                                       ),
                                       Padding(
-                                        padding: EdgeInsets.all(8.0),
+                                        padding: EdgeInsets.all(12.0),
                                         child: Column(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               product['name'],
                                               style: TextStyle(
-                                                fontWeight: FontWeight.bold,
+                                                fontWeight: FontWeight.w600,
                                                 fontSize: 16,
                                                 color: Colors.black87,
+                                                height: 1.2,
                                               ),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,

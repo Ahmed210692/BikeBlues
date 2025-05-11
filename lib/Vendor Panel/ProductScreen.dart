@@ -55,7 +55,6 @@ class _ProductScreenState extends State<ProductScreen> {
     _formKey.currentState?.save();
 
     try {
-      // Upload image
       final ref = FirebaseStorage.instance
           .ref()
           .child('product_images')
@@ -63,7 +62,6 @@ class _ProductScreenState extends State<ProductScreen> {
       await ref.putFile(_image!);
       final imageUrl = await ref.getDownloadURL();
 
-      // Upload product data
       final user = FirebaseAuth.instance.currentUser;
       await FirebaseFirestore.instance.collection('products').add({
         'name': _name,
@@ -118,147 +116,271 @@ class _ProductScreenState extends State<ProductScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Product', style: TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0,
-      ),
-      body: Stack(
-        children: [
-          Form(
-            key: _formKey,
-            child: ListView(
-              padding: EdgeInsets.all(24),
-              children: [
-                // Image Upload Section
-                GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    height: 240,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _imageError != null ? Colors.red : theme.colorScheme.primary.withOpacity(0.3),
-                        width: 2,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF4E9CD4),
+              Color(0xFF53DDA3),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Form(
+                key: _formKey,
+                child: ListView(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'Add Product',
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        // Empty SizedBox to balance the back button
+                        SizedBox(width: 48),
+                      ],
+                    ),
+                    SizedBox(height: 32),
+                    
+                    // Image Upload Section with animation
+                    AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          height: 280,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: _imageError != null ? Colors.red : Colors.white,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 15,
+                                offset: Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: _image == null
+                              ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      size: 64,
+                                      color: Color(0xFF4E9CD4),
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      'Add Product Image',
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        color: Color(0xFF4E9CD4),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Tap to upload (max 2MB)',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    if (_imageError != null) ...[
+                                      SizedBox(height: 12),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          _imageError!,
+                                          style: TextStyle(color: Colors.red, fontSize: 12),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                )
+                              : Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(22),
+                                      child: Image.file(_image!, 
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 12,
+                                      top: 12,
+                                      child: CircleAvatar(
+                                        backgroundColor: Color(0xFF53DDA3),
+                                        child: IconButton(
+                                          icon: Icon(Icons.edit, color: Colors.white),
+                                          onPressed: _pickImage,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
                       ),
                     ),
-                    child: _image == null
-                        ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.add_photo_alternate_outlined,
-                          size: 48,
-                          color: theme.colorScheme.primary,
+                    SizedBox(height: 32),
+
+                    // Product Name Field
+                    TextFormField(
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Product Name',
+                        hintText: 'Enter product name',
+                        labelStyle: TextStyle(color: Colors.white),
+                        hintStyle: TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(width: 2, color: Colors.white),
                         ),
-                        SizedBox(height: 12),
-                        Text(
-                          'Add Product Image',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.white, width: 2),
                         ),
-                        if (_imageError != null) ...[
-                          SizedBox(height: 8),
-                          Text(
-                            _imageError!,
-                            style: TextStyle(color: Colors.red, fontSize: 12),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.white, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) return 'Please enter product name';
+                        return null;
+                      },
+                      onSaved: (value) => _name = value!,
+                    ),
+                    SizedBox(height: 24),
+
+                    // Price Field
+                    TextFormField(
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Price',
+                        hintText: 'Enter product price',
+                        labelStyle: TextStyle(color: Colors.white),
+                        hintStyle: TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(width: 2, color: Colors.white),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.white, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.white, width: 2),
+                        ),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) return 'Please enter price';
+                        if (double.tryParse(value!) == null) return 'Please enter a valid number';
+                        return null;
+                      },
+                      onSaved: (value) => _price = double.parse(value!),
+                    ),
+                    SizedBox(height: 24),
+
+                    // Description Field
+                    TextFormField(
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Description',
+                        hintText: 'Enter product description',
+                        labelStyle: TextStyle(color: Colors.white),
+                        hintStyle: TextStyle(color: Colors.white70),
+                        alignLabelWithHint: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(width: 2, color: Colors.white),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.white, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.white, width: 2),
+                        ),
+                      ),
+                      maxLines: 6,
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) return 'Please enter description';
+                        return null;
+                      },
+                      onSaved: (value) => _description = value!,
+                    ),
+                    SizedBox(height: 40),
+
+                    // Submit Button
+                    Container(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _uploadProduct,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        ],
-                      ],
-                    )
-                        : ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.file(_image!, fit: BoxFit.cover),
+                          elevation: 4,
+                        ),
+                        child: _isLoading
+                            ? SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4E9CD4)),
+                                ),
+                              )
+                            : Text(
+                                'UPLOAD PRODUCT',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                  color: Color(0xFF4E9CD4),
+                                ),
+                              ),
+                      ),
                     ),
-                  ),
+                    SizedBox(height: 24),
+                  ],
                 ),
-                SizedBox(height: 24),
-
-                // Product Name Field
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Product Name',
-                    prefixIcon: Icon(Icons.inventory_2_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Please enter product name';
-                    return null;
-                  },
-                  onSaved: (value) => _name = value!,
-                ),
-                SizedBox(height: 16),
-
-                // Price Field
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Price',
-                    prefixIcon: Icon(Icons.attach_money_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Please enter price';
-                    if (double.tryParse(value!) == null) return 'Please enter a valid number';
-                    return null;
-                  },
-                  onSaved: (value) => _price = double.parse(value!),
-                ),
-                SizedBox(height: 16),
-
-                // Description Field
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Description',
-                    alignLabelWithHint: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
-                  maxLines: 6,
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Please enter description';
-                    return null;
-                  },
-                  onSaved: (value) => _description = value!,
-                ),
-                SizedBox(height: 32),
-
-                // Submit Button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _uploadProduct,
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : Text(
-                    'Upload Product',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

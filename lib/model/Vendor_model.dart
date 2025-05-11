@@ -7,7 +7,7 @@ class Vendor {
   String? storeImage;
   String shopName;
   String vendorName;
-
+  
   Vendor({
     required this.id,
     required this.email,
@@ -17,6 +17,7 @@ class Vendor {
     this.storeImage,
     required this.shopName,
     required this.vendorName,
+   
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +30,7 @@ class Vendor {
       'storeImage': storeImage,
       'shopName': shopName,
       'vendorName': vendorName,
+      
     };
   }
 
@@ -42,6 +44,7 @@ class Vendor {
       storeImage: map['storeImage'],
       shopName: map['shopName'],
       vendorName: map['vendorName'],
+     
     );
   }
 }

@@ -38,7 +38,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _checkUserType();
   }
 
-  // Function to check if the other user is a vendor and fetch their image
   Future<void> _checkUserType() async {
     try {
       DocumentSnapshot vendorDoc = await _firestore
@@ -57,7 +56,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // Function to pick and send an image
   Future<void> _pickAndSendImage() async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -79,7 +77,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // Function to upload image to Firebase Storage
   Future<void> _uploadImage(File imageFile) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
@@ -115,72 +112,110 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            if (isVendor && vendorImageUrl.isNotEmpty)
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundImage: NetworkImage(vendorImageUrl),
-                ),
-              ),
-            if (isVendor && vendorImageUrl.isNotEmpty)
-              SizedBox(width: 10),
-            Text(widget.otherUserName),
-          ],
-        ),
-        backgroundColor: Colors.blue[700],
-        elevation: 0,
-      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.blue[50]!, Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
+            colors: [Colors.blue[700]!, Colors.blue[50]!],
           ),
         ),
-        child: Column(
-          children: [
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _firestore
-                    .collection('chatRooms')
-                    .doc(widget.chatRoomId)
-                    .collection('messages')
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-
-                  return ListView.builder(
-                    reverse: true,
-                    itemCount: snapshot.data!.docs.length,
-                    itemBuilder: (context, index) {
-                      var message = snapshot.data!.docs[index];
-                      bool isMe = message['senderId'] == _auth.currentUser!.uid;
-                      return _buildMessageItem(message, isMe);
-                    },
-                  );
-                },
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom Header
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    if (isVendor && vendorImageUrl.isNotEmpty)
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundImage: NetworkImage(vendorImageUrl),
+                        ),
+                      ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.otherUserName,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            'Online',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            _buildMessageInputArea(),
-          ],
+              
+              // Chat Messages
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('chatRooms')
+                        .doc(widget.chatRoomId)
+                        .collection('messages')
+                        .orderBy('timestamp', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+
+                      return ListView.builder(
+                        reverse: true,
+                        padding: EdgeInsets.all(16),
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          var message = snapshot.data!.docs[index];
+                          bool isMe = message['senderId'] == _auth.currentUser!.uid;
+                          return _buildMessageItem(message, isMe);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+              _buildMessageInputArea(),
+            ],
+          ),
         ),
       ),
     );
@@ -189,42 +224,54 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMessageItem(DocumentSnapshot message, bool isMe) {
     return GestureDetector(
       onLongPress: () => _confirmDeleteMessage(message.id),
-      child: Align(
-        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-          child: Column(
-            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isMe ? Colors.blue[100] : Colors.grey[300],
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: _buildMessageContent(message),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 8),
+        child: Row(
+          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          children: [
+            if (!isMe) ...[
+              CircleAvatar(
+                radius: 16,
+                backgroundImage: isVendor ? NetworkImage(vendorImageUrl) : null,
+                child: !isVendor ? Icon(Icons.person) : null,
               ),
-              SizedBox(height: 5),
-              Text(
-                message['timestamp'] != null
-                    ? DateFormat('hh:mm a').format(
-                    (message['timestamp'] as Timestamp).toDate())
-                    : '',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey[600],
-                ),
-              ),
+              SizedBox(width: 8),
             ],
-          ),
+            Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: isMe ? Colors.blue[100] : Colors.grey[200],
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildMessageContent(message),
+                  SizedBox(height: 4),
+                  Text(
+                    message['timestamp'] != null
+                        ? DateFormat('hh:mm a').format(
+                            (message['timestamp'] as Timestamp).toDate())
+                        : '',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -292,7 +339,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: CircularProgressIndicator(
                   value: loadingProgress.expectedTotalBytes != null
                       ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
+                          loadingProgress.expectedTotalBytes!
                       : null,
                 ),
               );
@@ -325,7 +372,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: CircularProgressIndicator(
                   value: loadingProgress.expectedTotalBytes != null
                       ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
+                          loadingProgress.expectedTotalBytes!
                       : null,
                 ),
               );
@@ -338,13 +385,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageInputArea() {
     return Container(
-      padding: EdgeInsets.all(8.0),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
-            blurRadius: 5,
+            blurRadius: 8,
             offset: Offset(0, -2),
           ),
         ],
@@ -352,27 +399,36 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.image, color: Colors.blue),
+            icon: Icon(Icons.image, color: Colors.blue[700]),
             onPressed: _pickAndSendImage,
           ),
           Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: TextField(
+                controller: _messageController,
+                decoration: InputDecoration(
+                  hintText: 'Type a message...',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
                 ),
-                filled: true,
-                fillColor: Colors.grey[200],
-                contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               ),
             ),
           ),
-          SizedBox(width: 10),
-          CircleAvatar(
-            backgroundColor: Colors.blue,
+          SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue[700]!, Colors.blue[400]!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
             child: IconButton(
               icon: Icon(Icons.send, color: Colors.white),
               onPressed: _sendMessage,

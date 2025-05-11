@@ -106,7 +106,7 @@ class _LandingpageState extends State<Landingpage> with SingleTickerProviderStat
                   onPressed: () {
                     _controller.dispose();
                     Navigator.pop(context);
-                    _launchURL('https://bike-blues.vercel.app/');
+                    _launchURL('https://gzip-build-five.vercel.app/');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
@@ -153,28 +153,34 @@ class _LandingpageState extends State<Landingpage> with SingleTickerProviderStat
                 fit: BoxFit.cover,
               ),
             ),
-            IconButton(onPressed: (){
-              Navigator.of(context).pop();
-            }, icon: Icon(Icons.arrow_back, color: Colors.white,)),
-            SizedBox(height: screenHeight * 0.1,),
             Padding(
-              padding: const EdgeInsets.all(30.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Text(
-                    'BikeBlues',
-                    style: TextStyle(
-                      fontSize: 24,
-                      foreground: Paint()
-                        ..shader = LinearGradient(
-                          colors: <Color>[Color(0xFF4E9CD4), Color(0xFF53DDA3)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ).createShader(Rect.fromLTWH(0, 0, screenWidth * 0.5, screenHeight * 0.05)),
-                      fontWeight: FontWeight.bold,
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    icon: Icon(Icons.arrow_back, color: Colors.white),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'BikeBlues',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24,
+                        foreground: Paint()
+                          ..shader = LinearGradient(
+                            colors: <Color>[Color(0xFF4E9CD4), Color(0xFF53DDA3)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(Rect.fromLTWH(0, 0, screenWidth * 0.5, screenHeight * 0.05)),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                  // Adding an empty SizedBox with the same width as IconButton for symmetry
+                  SizedBox(width: 50.0),
                 ],
               ),
             ),

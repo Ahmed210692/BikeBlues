@@ -20,6 +20,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
   String searchQuery = '';
   int _selectedIndex = 0;
   late Vendor? _vendor;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void didChangeDependencies() {
@@ -145,281 +146,236 @@ class _VendorDashboardState extends State<VendorDashboard> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: screenHeight * 0.04,
-            width: screenWidth * 0.9,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    'Welcome ${_vendor?.vendorName ?? 'N/A'}!',
-                    style: TextStyle(
-                      fontSize: 30,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 10.0,
-                          color: Color(0xFF4E9CD4).withOpacity(0.5),
-                          offset: Offset(2.0, 2.0),
-                        ),
-                      ],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back,',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${_vendor?.vendorName ?? 'N/A'}!',
+                      style: TextStyle(
+                        fontSize: 28,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundImage: _vendor?.storeImage != null
+                          ? NetworkImage(_vendor!.storeImage!) as ImageProvider
+                          : const AssetImage('assets/default_profile.png'),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search products...',
-              prefixIcon: Icon(Icons.search, color: Color(0xFF53DDA3)),
-              hintStyle: TextStyle(color: Colors.white54),
-              filled: true,
-              fillColor: Colors.white10,
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(30)),
-                borderSide: BorderSide(color: Color(0xFF4E9CD4), width: 2),
+            SizedBox(height: 32),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(30)),
-                borderSide: BorderSide(color: Colors.white24, width: 1),
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search products...',
+                  prefixIcon: Icon(Icons.search, color: Color(0xFF53DDA3)),
+                  hintStyle: TextStyle(color: Colors.white54),
+                  border: InputBorder.none,
+                ),
+                style: TextStyle(color: Colors.white),
+                cursorColor: Color(0xFF53DDA3),
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value.toLowerCase();
+                  });
+                },
               ),
             ),
-            style: TextStyle(color: Colors.white),
-            cursorColor: Color(0xFF53DDA3),
-            onChanged: (value) {
-              setState(() {
-                searchQuery = value.toLowerCase();
-              });
-            },
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('products')
-                  .where('vendorId', isEqualTo: _vendor?.id)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      valueColor:
-                      AlwaysStoppedAnimation<Color>(Color(0xFF53DDA3)),
-                    ),
-                  );
-                }
-
-                var products = snapshot.data!.docs.where((product) {
-                  String productName = product['name']?.toLowerCase() ?? '';
-                  return productName.contains(searchQuery);
-                }).toList();
-
-                if (products.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No products found',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 18,
+            SizedBox(height: 24),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('products')
+                    .where('vendorId', isEqualTo: _vendor?.id)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF53DDA3)),
                       ),
+                    );
+                  }
+
+                  var products = snapshot.data!.docs.where((product) {
+                    String productName = product['name']?.toLowerCase() ?? '';
+                    return productName.contains(searchQuery);
+                  }).toList();
+
+                  if (products.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inventory_2_outlined, 
+                            size: 64, 
+                            color: Colors.white24
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No products found',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.8, // Adjusted from 0.75 to 0.8
                     ),
-                  );
-                }
+                    padding: EdgeInsets.only(bottom: 90),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index].data() as Map<String, dynamic>;
+                      final productId = products[index].id;
 
-                return GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 15,
-                    mainAxisSpacing: 15,
-                    childAspectRatio: 0.7,
-                  ),
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    final product =
-                    products[index].data() as Map<String, dynamic>;
-                    final productId = products[index].id;
-
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ProductDetailScreen(
-                              productData: product,
-                              productId: productId,
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailScreen(
+                                productData: product,
+                                productId: productId,
+                              ),
                             ),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.white.withOpacity(0.1),
                           ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 10,
-                              offset: Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Card(
-                          elevation: 5,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Stack(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                child: Image.network(
+                                  product['imageUrl'],
+                                  width: double.infinity,
+                                  height: 130, // Reduced from 140 to 130
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0), // Reduced padding from 12 to 8
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Image.network(
-                                      product['imageUrl'],
-                                      width: double.infinity,
-                                      height: 140,
-                                      fit: BoxFit.cover,
+                                    Text(
+                                      product['name'],
+                                      style: TextStyle(
+                                        fontSize: 14, // Reduced from 16 to 14
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      child: Container(
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black.withOpacity(0.7),
-                                            ],
+                                    SizedBox(height: 2), // Reduced from 8 to 4
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'RS ${product['price']}',
+                                          style: TextStyle(
+                                            fontSize: 14, // Reduced from 16 to 14
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF53DDA3),
                                           ),
                                         ),
-                                      ),
+                                        IconButton(
+                                          icon: Icon(Icons.delete_outline,
+                                              color: Colors.red[300],
+                                              size: 20), // Reduced icon size
+                                          padding: EdgeInsets.zero, // Remove padding
+                                          constraints: BoxConstraints(), // Remove constraints
+                                          onPressed: () async {
+                                            bool confirmDelete =
+                                            await _showDeleteConfirmationDialog(
+                                                context);
+                                            if (confirmDelete) {
+                                              await _deleteProduct(productId);
+                                            }
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(2.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        product['name'],
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'RS: ${product['price']}',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF53DDA3),
-                                            ),
-                                          ),
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color:
-                                              Colors.red.withOpacity(0.2),
-                                            ),
-                                            child: IconButton(
-                                              icon: Icon(Icons.delete,
-                                                  color: Colors.red),
-                                              onPressed: () async {
-                                                bool confirmDelete =
-                                                await _showDeleteConfirmationDialog(
-                                                    context);
-                                                if (confirmDelete) {
-                                                  await _deleteProduct(
-                                                      productId);
-                                                }
-                                              },
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final Vendor? vendor =
-    ModalRoute.of(context)?.settings.arguments as Vendor?;
+    final Vendor? vendor = ModalRoute.of(context)?.settings.arguments as Vendor?;
 
     return Theme(
       data: darkTheme,
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: Color.fromRGBO(30, 30, 30, 1),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(
-            vendor?.shopName ?? 'N/A',
-            style: TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-              foreground: Paint()
-                ..shader = LinearGradient(
-                  colors: [Color(0xFF4E9CD4), Color(0xFF53DDA3)],
-                ).createShader(Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
-            ),
-          ),
-          centerTitle: true,
-          leading: Builder(
-            builder: (BuildContext context) {
-              return IconButton(
-                onPressed: () {
-                  Scaffold.of(context).openDrawer();
-                },
-                icon: CircleAvatar(
-                  radius: 30,
-                  backgroundImage: vendor?.storeImage != null
-                      ? NetworkImage(vendor!.storeImage!) as ImageProvider
-                      : const AssetImage('assets/default_profile.png'),
-                  child: vendor?.storeImage == null
-                      ? const Icon(Icons.person)
-                      : null,
-                ),
-              );
-            },
-          ),
-        ),
         drawer: Drawer(
           child: Container(
             decoration: BoxDecoration(
@@ -465,7 +421,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
                         title: Text('Profile',
                             style: TextStyle(color: Colors.white)),
                         onTap: () {
-                          Navigator .of(context).push(
+                          Navigator.of(context).push(
                             MaterialPageRoute(
                                 builder: (_) =>
                                     VendorProfileScreen(vendor: vendor!)),
@@ -513,9 +469,9 @@ class _VendorDashboardState extends State<VendorDashboard> {
               left: 0,
               right: 0,
               child: Container(
-                height: 70,
+                height: 80,
                 decoration: BoxDecoration(
-                  color: Color.fromRGBO(30, 30, 30, 1),
+                  color: Colors.black.withOpacity(0.8),
                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                   boxShadow: [
                     BoxShadow(
@@ -529,12 +485,20 @@ class _VendorDashboardState extends State<VendorDashboard> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.home, color: _selectedIndex == 0 ? Color(0xFF53DDA3) : Colors.white),
+                      icon: Icon(
+                        Icons.home_rounded,
+                        size: 28,
+                        color: _selectedIndex == 0 ? Color(0xFF53DDA3) : Colors.white
+                      ),
                       onPressed: () => _onItemTapped(0),
                     ),
-                    SizedBox(width: 40), // Space for the floating button
+                    SizedBox(width: 40),
                     IconButton(
-                      icon: Icon(Icons.chat, color: _selectedIndex == 1 ? Color(0xFF53DDA3) : Colors.white),
+                      icon: Icon(
+                        Icons.chat_rounded,
+                        size: 28,
+                        color: _selectedIndex == 1 ? Color(0xFF53DDA3) : Colors.white
+                      ),
                       onPressed: () => _onItemTapped(1),
                     ),
                   ],
@@ -542,16 +506,34 @@ class _VendorDashboardState extends State<VendorDashboard> {
               ),
             ),
             Positioned(
-              bottom: 20,
-              left: MediaQuery.of(context).size.width / 2 - 30,
-              child: FloatingActionButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => ProductScreen()),
-                  );
-                },
-                backgroundColor: Color(0xFF53DDA3),
-                child: Icon(Icons.add, size: 30),
+              bottom: 40,
+              left: MediaQuery.of(context).size.width / 2 - 32,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF4E9CD4), Color(0xFF53DDA3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0xFF53DDA3).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => ProductScreen()),
+                    );
+                  },
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: Icon(Icons.add, size: 32),
+                ),
               ),
             ),
           ],

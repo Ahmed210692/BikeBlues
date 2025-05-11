@@ -528,164 +528,159 @@ class _ProductDetailsState extends State<ProductDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.grey[100],
-        appBar: AppBar(
-          title: Text(
-            widget.product['name'],
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          backgroundColor: Colors.white,
-          elevation: 0,
-          iconTheme: IconThemeData(color: Colors.black),
-          // actions: [
-          //   IconButton(
-          //     icon: Icon(
-          //       _isFavorite ? Icons.favorite : Icons.favorite_border,
-          //       color: Colors.red,
-          //     ),
-          //     onPressed: _toggleFavorite,
-          //   ),
-          // ],
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-          Stack(
-          children: [
-          Hero(
-          tag: widget.productId,
-            child: Container(
-              width: double.infinity,
-              height: 350,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(widget.product['imageUrl']),
-                  fit: BoxFit.cover,
-                ),
+      backgroundColor: Colors.grey[100],
+      extendBodyBehindAppBar: true,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 350,
+            floating: false,
+            pinned: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Hero(
+                    tag: widget.productId,
+                    child: Image.network(
+                      widget.product['imageUrl'],
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.4),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.4),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.6),
-                    Colors.transparent,
+              title: Text(
+                widget.product['name'],
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(1, 1),
+                      blurRadius: 2,
+                      color: Colors.black.withOpacity(0.5),
+                    ),
                   ],
                 ),
               ),
+              centerTitle: true,
             ),
-          ),
-          ],
-        ),
-        Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(24),
-              bottomRight: Radius.circular(24),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: Offset(0, 2),
+            leading: IconButton(
+              icon: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.arrow_back, color: Colors.white),
               ),
-            ],
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Rs. ${widget.product['price']}',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 10,
+                        offset: Offset(0, -5),
+                      ),
+                    ],
                   ),
-                  // ElevatedButton.icon(
-                  //   onPressed: _initiateChat,
-                  //   icon: Icon(Icons.message, size: 20),
-                  //   label: Text('Contact Seller'),
-                  //   style: ElevatedButton.styleFrom(
-                  //     backgroundColor: Colors.blue,
-                  //     padding: EdgeInsets.symmetric(
-                  //       horizontal: 20,
-                  //       vertical: 12,
-                  //     ),
-                  //     shape: RoundedRectangleBorder(
-                  //       borderRadius: BorderRadius.circular(30),
-                  //     ),
-                  //   ),
-                  // ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Description',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Rs. ${widget.product['price']}',
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Description',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        widget.product['description'] ?? 'No description available.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[800],
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                widget.product['description'] ?? 'No description available.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[800],
-                  height: 1.5,
+                SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildRatingStatistics(),
                 ),
-              ),
-            ],
+                SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildReviewsList(),
+                ),
+                SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.all(20),
+                  child: _buildReviewInput(),
+                ),
+                SizedBox(height: 100),
+              ],
+            ),
           ),
-        ),
-        SizedBox(height: 16),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: _buildRatingStatistics(),
-        ),
-        SizedBox(height: 16),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: _buildReviewsList(),
-        ),
-        SizedBox(height: 16),
-        Padding(
-        padding: EdgeInsets.all(16),child: _buildReviewInput(),
-        ),
-              SizedBox(height: 32), // Extra padding at the bottom for better scrolling
-            ],
-          ),
-        ),
+        ],
+      ),
       bottomNavigationBar: Container(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.2),
               spreadRadius: 1,
-              blurRadius: 5,
-              offset: Offset(0, -2),
+              blurRadius: 10,
+              offset: Offset(0, -5),
             ),
           ],
         ),
@@ -693,45 +688,50 @@ class _ProductDetailsState extends State<ProductDetails> {
           child: Row(
             children: [
               Expanded(
+                flex: 4,
                 child: ElevatedButton(
                   onPressed: _initiateChat,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(15),
                     ),
+                    elevation: 2,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.message, size: 20, color: Colors.white,),
-                      SizedBox(width: 8),
+                      Icon(Icons.message, size: 22, color: Colors.white),
+                      SizedBox(width: 10),
                       Text(
                         'Contact Seller',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white
+                          color: Colors.white,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              SizedBox(width: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    _isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: Colors.red,
-                    size: 28,
+              SizedBox(width: 15),
+              Expanded(
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                  onPressed: _toggleFavorite,
+                  child: IconButton(
+                    icon: Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: Colors.red,
+                      size: 28,
+                    ),
+                    onPressed: _toggleFavorite,
+                  ),
                 ),
               ),
             ],

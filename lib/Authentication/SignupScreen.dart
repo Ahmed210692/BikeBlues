@@ -9,7 +9,6 @@ import '../model/User_model.dart';
 import '../model/Vendor_model.dart';
 import 'Email Verification.dart';
 
-
 class DynamicSignup extends StatefulWidget {
   const DynamicSignup({Key? key}) : super(key: key);
 
@@ -22,20 +21,15 @@ class _DynamicSignupState extends State<DynamicSignup> {
   String? selectedRole;
   String? _storeImage;
   String? _imageError;
-  String? _uploadedImageUrl; // Store the uploaded image URL
-  bool _obscurePassword = true; // For password visibility toggle
+  String? _uploadedImageUrl;
+  bool _obscurePassword = true;
 
-  // Controllers for shared fields
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
-
-  // User-specific controller
   final TextEditingController _nameController = TextEditingController();
-
-  // Vendor-specific controllers
   final TextEditingController _shopNameController = TextEditingController();
   final TextEditingController _vendorNameController = TextEditingController();
 
@@ -53,16 +47,13 @@ class _DynamicSignupState extends State<DynamicSignup> {
   }
 
   Future<void> pickImage() async {
-    final pickedFile =
-    await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         _storeImage = pickedFile.path;
         _imageError = null;
       });
-
     }
-
   }
 
   Future<String> uploadImage(File image) async {
@@ -72,7 +63,6 @@ class _DynamicSignupState extends State<DynamicSignup> {
     final snapshot = await ref.putFile(image);
     return await snapshot.ref.getDownloadURL();
   }
-
 
   Future<bool> isEmailUnique(String email, String collection) async {
     final querySnapshot = await FirebaseFirestore.instance
@@ -97,7 +87,6 @@ class _DynamicSignupState extends State<DynamicSignup> {
         password: _passwordController.text,
       );
 
-      // Send the user to email verification screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => EmailVerificationScreen(
@@ -107,7 +96,6 @@ class _DynamicSignupState extends State<DynamicSignup> {
         ),
       );
 
-      // Only save user to Firestore if email is verified
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -117,7 +105,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
         'email': _emailController.text,
         'address': _addressController.text,
         'phoneNumber': _phoneNumberController.text,
-        'emailVerified': false // Add this flag
+        'emailVerified': false
       });
 
     } on FirebaseAuthException catch (e) {
@@ -156,7 +144,6 @@ class _DynamicSignupState extends State<DynamicSignup> {
         password: _passwordController.text,
       );
 
-      // Send the vendor to email verification screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => EmailVerificationScreen(
@@ -166,7 +153,6 @@ class _DynamicSignupState extends State<DynamicSignup> {
         ),
       );
 
-      // Only save vendor to Firestore if email is verified
       await FirebaseFirestore.instance
           .collection('vendors')
           .doc(userCredential.user!.uid)
@@ -178,7 +164,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
         'phoneNumber': _phoneNumberController.text,
         'shopName': _shopNameController.text,
         'storeImage': storeImageUrl,
-        'emailVerified': false // Add this flag
+        'emailVerified': false
       });
 
     } on FirebaseAuthException catch (e) {
@@ -193,6 +179,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
+
   void _register() async {
     if (_formKey.currentState!.validate()) {
       if (selectedRole == 'Vendor' && _storeImage == null) {
@@ -203,7 +190,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
       }
 
       if (selectedRole == 'User ') {
-        await registerUser ();
+        await registerUser();
       } else if (selectedRole == 'Vendor') {
         await registerVendor();
       }
@@ -250,193 +237,296 @@ class _DynamicSignupState extends State<DynamicSignup> {
     return SafeArea(
       child: Scaffold(
         backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: screenHeight * 0.01),
-                      child: Image.asset('assets/images/defaultLogo.png', height: screenHeight * 0.08,),
-                    ),
-                    SizedBox(height: screenHeight * 0.01),
-                    const Text(
-                      'BikeBlues',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color.fromRGBO(30, 30, 30, 1),
+                Color.fromRGBO(20, 20, 20, 1),
+              ],
+            ),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(top: screenHeight * 0.02),
+                        child: Hero(
+                          tag: 'logo',
+                          child: Image.asset(
+                            'assets/images/defaultLogo.png',
+                            height: screenHeight * 0.12,
+                          ),
+                        ),
                       ),
-                    ),
-                    SizedBox(height: screenHeight * 0.04),
-
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Select Role',
-                        labelStyle: TextStyle(color: Colors.white),
-                        border: OutlineInputBorder(
+                      SizedBox(height: screenHeight * 0.02),
+                      Text(
+                        'BikeBlues',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.04),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Color.fromRGBO(40, 40, 40, 1),
                           borderRadius: BorderRadius.circular(18),
                         ),
-                      ),
-                      value: selectedRole,
-                      items: ['User ', 'Vendor']
-                          .map((role) => DropdownMenuItem(
-                        value: role,
-                        child: Text(role, style: TextStyle(color: Colors.grey)),
-                      ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedRole = value;
-                        });
-                      },
-                      validator: (value) => value == null ? 'Please select a role' : null,
-                    ),
-                    SizedBox(height: screenHeight * 0.04),
-
-
-
-                    if (selectedRole == 'User ') ...[
-                      SizedBox(height: screenHeight * 0.02),
-                      _buildTextFormField(
-                        controller: _nameController,
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return 'Please Enter Name';
-                          }
-                          return null;
-                        },
-                        hintText: 'Enter Your Name',
-                        labelText: 'Name',
-                        icon: Icons.person,
-                      ),
-                    ],
-
-                    // Show vendor-specific fields if the selected role is 'Vendor'
-                    if (selectedRole == 'Vendor') ...[
-                      SizedBox(height: screenHeight * 0.02),
-                      _buildTextFormField(
-                        controller: _vendorNameController,
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return 'Please Enter Name';
-                          }
-                          return null;
-                        },
-                        hintText: 'Enter Your Name',
-                        labelText: 'Name',
-                        icon: Icons.person,
-                      ),
-                      SizedBox(height: screenHeight * 0.02),
-                      _buildTextFormField(
-                        controller: _shopNameController,
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return 'Please Enter Shop Name';
-                          }
-                          return null;
-                        },
-                        hintText: 'Enter Your Shop Name',
-                        labelText: 'Shop Name',
-                        icon: Icons.store,
-                      ),
-                    ],
-
-                    // Continue with the rest of your fields...
-                    SizedBox(height: screenHeight * 0.02),
-                    _buildTextFormField(
-                      controller: _emailController,
-                      validator: _validateEmail,
-                      hintText: 'Enter Your Email',
-                      labelText: 'Email',
-                      icon: Icons.mail_outline_sharp,
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    _buildTextFormField(
-                      controller: _passwordController,
-                      validator: _validatePassword,
-                      hintText: 'Enter Your Password',
-                      labelText: 'Password',
-                      icon: Icons.lock_outline,
-                      obscureText: _obscurePassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    _buildTextFormField(
-                      controller: _addressController,
-                      validator: (value) {
-                        if (value!.isEmpty) {
-                          return 'Please Enter Address';
-                        }
-                        return null;
-                      },
-                      hintText: 'Enter Your Address',
-                      labelText: 'Address',
-                      icon: Icons.home_outlined,
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    _buildTextFormField(
-                      controller: _phoneNumberController,
-                      validator: _validatePhoneNumber,
-                      hintText: 'Enter Your Phone Number',
-                      labelText: 'Phone Number',
-                      keyboardType: TextInputType.phone,
-                      icon: Icons.phone_android_outlined,
-                    ),
-                    if (selectedRole == 'Vendor') ...[
-                      SizedBox(height: screenHeight * 0.02),
-                      _buildImagePicker(screenHeight, screenWidth),
-                    ],
-                    SizedBox(height: screenHeight * 0.02),
-                    ElevatedButton(
-                      onPressed: _register,
-                      child: const Text('Register'),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton(
-                          style: const ButtonStyle(
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => UnifiedLoginScreen()),
-                            );
+                        child: DropdownButtonFormField<String>(
+                          dropdownColor: Color.fromRGBO(40, 40, 40, 1),
+                          decoration: InputDecoration(
+                            labelText: 'Select Role',
+                            labelStyle: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                          value: selectedRole,
+                          items: ['User ', 'Vendor']
+                              .map((role) => DropdownMenuItem(
+                                    value: role,
+                                    child: Text(
+                                      role,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedRole = value;
+                            });
                           },
-                          child: RichText(
-                            text: const TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Already have an Account? ',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                                TextSpan(
-                                  text: 'Sign In!',
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(83, 221, 163, 1),
-                                    fontSize: 18,
+                          validator: (value) =>
+                              value == null ? 'Please select a role' : null,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.03),
+                      if (selectedRole == 'User ') ...[
+                        _buildTextFormField(
+                          controller: _nameController,
+                          validator: (value) {
+                            if (value!.isEmpty) {
+                              return 'Please Enter Name';
+                            }
+                            return null;
+                          },
+                          hintText: 'Enter Your Name',
+                          labelText: 'Name',
+                        ),
+                      ],
+                      if (selectedRole == 'Vendor') ...[
+                        _buildTextFormField(
+                          controller: _vendorNameController,
+                          validator: (value) {
+                            if (value!.isEmpty) {
+                              return 'Please Enter Name';
+                            }
+                            return null;
+                          },
+                          hintText: 'Enter Your Name',
+                          labelText: 'Name',
+                        ),
+                        SizedBox(height: screenHeight * 0.02),
+                        _buildTextFormField(
+                          controller: _shopNameController,
+                          validator: (value) {
+                            if (value!.isEmpty) {
+                              return 'Please Enter Shop Name';
+                            }
+                            return null;
+                          },
+                          hintText: 'Enter Your Shop Name',
+                          labelText: 'Shop Name',
+                        ),
+                      ],
+                      SizedBox(height: screenHeight * 0.02),
+                      _buildTextFormField(
+                        controller: _emailController,
+                        validator: _validateEmail,
+                        hintText: 'Enter Your Email',
+                        labelText: 'Email',
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+                      _buildTextFormField(
+                        controller: _passwordController,
+                        validator: _validatePassword,
+                        hintText: 'Enter Your Password',
+                        labelText: 'Password',
+                        obscureText: _obscurePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Colors.white70,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+                      _buildTextFormField(
+                        controller: _addressController,
+                        validator: (value) {
+                          if (value!.isEmpty) {
+                            return 'Please Enter Address';
+                          }
+                          return null;
+                        },
+                        hintText: 'Enter Your Address',
+                        labelText: 'Address',
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+                      _buildTextFormField(
+                        controller: _phoneNumberController,
+                        validator: _validatePhoneNumber,
+                        hintText: 'Enter Your Phone Number',
+                        labelText: 'Phone Number',
+                        keyboardType: TextInputType.phone,
+                      ),
+                      if (selectedRole == 'Vendor') ...[
+                        SizedBox(height: screenHeight * 0.02),
+                        Container(
+                          height: 56, // Same height as text fields
+                          decoration: BoxDecoration(
+                            color: Color.fromRGBO(40, 40, 40, 1),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: _imageError != null ? Colors.red.shade300 : Colors.white24,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: _storeImage == null
+                              ? TextButton(
+                                  onPressed: pickImage,
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(horizontal: 20),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.cloud_upload_outlined,
+                                        color: Color.fromRGBO(83, 221, 163, 1),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'Upload Profile Image',
+                                        style: TextStyle(
+                                          color: Color.fromRGBO(83, 221, 163, 1),
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      if (_imageError != null) ...[
+                                        Spacer(),
+                                        Text(
+                                          _imageError!,
+                                          style: TextStyle(
+                                            color: Colors.red.shade300,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                )
+                              : GestureDetector(
+                                  onTap: pickImage,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Image.file(
+                                      File(_storeImage!),
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                    ),
                                   ),
                                 ),
-                              ],
+                        ),
+                      ],
+                      SizedBox(height: screenHeight * 0.03),
+                      Container(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          onPressed: _register,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(83, 221, 163, 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            elevation: 3,
+                          ),
+                          child: Text(
+                            'Register',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => UnifiedLoginScreen()),
+                          );
+                        },
+                        child: RichText(
+                          text: TextSpan(
+                            style: TextStyle(fontSize: 16),
+                            children: [
+                              TextSpan(
+                                text: 'Already have an Account? ',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              TextSpan(
+                                text: 'Sign In!',
+                                style: TextStyle(
+                                  color: Color.fromRGBO(83, 221, 163, 1),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -451,67 +541,58 @@ class _DynamicSignupState extends State<DynamicSignup> {
     required String? Function(String?) validator,
     required String hintText,
     required String labelText,
-    required IconData icon,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     Widget? suffixIcon,
   }) {
-    return TextFormField(
-      controller: controller,
-      validator: validator,
-      keyboardType: keyboardType,
-      style: TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        hintText: hintText,
-        labelText: labelText,
-        prefixIcon: Icon(icon, color: Colors.white,),
-        suffixIcon: suffixIcon,
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blue),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.red),
-          borderRadius: BorderRadius.circular(18),
-        ),
-      ),
-      obscureText: obscureText,
-    );
-  }
-  ///////////////////
-  Widget _buildImagePicker(double screenHeight, double screenWidth) {
     return Container(
-      height: screenHeight * 0.2,
-      width: screenWidth * 0.6,
-
       decoration: BoxDecoration(
-          color: Colors.black12,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.fromBorderSide(BorderSide(color: Colors.white))
+        color: Color.fromRGBO(40, 40, 40, 1),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: TextButton(
-                onPressed: pickImage,
-                child: _storeImage == null
-                    ? const Text('Upload Profile Image', style: TextStyle(color: Color.fromRGBO(83, 221, 163, 1)),)
-                    : Image.file(File(_storeImage!), fit: BoxFit.cover),
-              ),
-            ),
-            if (_imageError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(_imageError!, style: const TextStyle(color: Colors.red)),
-              ),
-          ],
+      child: TextFormField(
+        controller: controller,
+        validator: validator,
+        keyboardType: keyboardType,
+        style: TextStyle(color: Colors.white, fontSize: 16),
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.transparent,
+          hintText: hintText,
+          hintStyle: TextStyle(color: Colors.white38),
+          labelText: labelText,
+          labelStyle: TextStyle(color: Colors.white70),
+          suffixIcon: suffixIcon,
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          border: OutlineInputBorder(
+            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Color.fromRGBO(83, 221, 163, 1), width: 2),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.red.shade300, width: 2),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.red.shade300, width: 2),
+            borderRadius: BorderRadius.circular(18),
+          ),
         ),
+        obscureText: obscureText,
       ),
     );
   }

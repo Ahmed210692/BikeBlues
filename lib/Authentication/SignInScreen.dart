@@ -8,7 +8,6 @@ import '../Vendor Panel/Vendor_Dashboard.dart';
 import '../model/Vendor_model.dart';
 import 'ForgetPassword.dart';
 
-
 class UnifiedLoginScreen extends StatefulWidget {
   const UnifiedLoginScreen({super.key});
 
@@ -16,21 +15,38 @@ class UnifiedLoginScreen extends StatefulWidget {
   State<UnifiedLoginScreen> createState() => _UnifiedLoginScreenState();
 }
 
-class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
+class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   bool _isPressed = false;
   bool _isVendorLogin = false;
+  bool _obscurePassword = true;
 
   // Admin credentials
   final String adminPassword = 'Admin123';
 
   @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+    _animationController.forward();
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -39,6 +55,9 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: EdgeInsets.all(10),
       ),
     );
   }
@@ -84,13 +103,11 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
             .collection('vendors')
             .doc(userCredential.user!.uid)
             .get();
-        String currentVendorId = userCredential.user!.uid;
-        print('Current Vendor ID: $currentVendorId');
-
+            
         if (vendorData.exists) {
           Vendor vendor = Vendor.fromMap(vendorData.data() as Map<String, dynamic>);
-          _showSnackBar('Login successful!', color: Colors.green);
-          Navigator.of(context).push(
+          _showSnackBar('Welcome back!', color: Colors.green);
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => VendorDashboard(),
               settings: RouteSettings(arguments: vendor),
@@ -103,38 +120,41 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
       } else {
         // User Login Flow
         if (vendorsQuery.docs.isNotEmpty) {
-          _showSnackBar('Account registered as Vendor. Please use Vendor Login.');
+          _showSnackBar('This account is registered as a Vendor. Please use Vendor Login.');
           return;
         }
 
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text,
           password: _passwordController.text,
         );
 
-        // Get current user ID
-        String currentUserId = userCredential.user!.uid;
-        print('Current User ID: $currentUserId');
-
-        _showSnackBar('Successfully Signed In', color: Colors.green);
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => Landingpage()));
+        _showSnackBar('Welcome back!', color: Colors.green);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => Landingpage()),
+        );
       }
     } on FirebaseAuthException catch (e) {
       String message;
       switch (e.code) {
         case 'wrong-password':
-          message = 'Wrong password provided.';
+          message = 'Incorrect password. Please try again.';
           break;
         case 'user-not-found':
-          message = 'No user found for that email.';
+          message = 'No account found with this email.';
+          break;
+        case 'invalid-email':
+          message = 'Please enter a valid email address.';
+          break;
+        case 'user-disabled':
+          message = 'This account has been disabled.';
           break;
         default:
-          message = 'An error occurred: ${e.message}'; // Print the error message
+          message = 'Authentication failed. Please try again.';
       }
       _showSnackBar(message);
     } catch (e) {
-      print('Unexpected error: $e'); // Print the unexpected error
-      _showSnackBar('An unexpected error occurred.');
+      _showSnackBar('An unexpected error occurred. Please try again.');
     } finally {
       setState(() {
         _isPressed = false;
@@ -148,267 +168,283 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+      backgroundColor: const Color(0xFF1A1A1A),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: BouncingScrollPhysics(),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
             child: Form(
               key: _formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo and App Name
-                    Padding(
-                      padding: EdgeInsets.only(top: screenHeight * 0.08),
-                      child: Image.asset('assets/images/defaultLogo.png'),
-                    ),
-                    SizedBox(height: screenHeight * 0.03),
-                    Text(
-                      'BikeBlues',
-                      style: TextStyle(
-                        fontSize: 24,
-                        foreground: Paint()
-                          ..shader = LinearGradient(
-                            colors: const <Color>[
-                              Color(0xFF4E9CD4),
-                              Color(0xFF53DDA3),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ).createShader(
-                            Rect.fromLTWH(0, 0, screenWidth * 0.5, screenHeight * 0.05),
-                          ),
-                        fontWeight: FontWeight.bold,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(height: screenHeight * 0.08),
+                  
+                  // Logo or Brand Image could go here
+                  Container(
+                    height: 100,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF4E9CD4), Color(0xFF53DDA3)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.05),
+                    child: Icon(
+                      _isVendorLogin ? Icons.store : Icons.person,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                  ),
 
-                    // Welcome Text
-                    RichText(
-                      textAlign: TextAlign.center,
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: _isVendorLogin ? 'Vendor Login\n' : 'Welcome Back!\n',
-                            style: TextStyle(
-                              fontSize: 33,
-                              fontWeight: FontWeight.bold,
-                              foreground: Paint()
-                                ..shader = LinearGradient(
-                                  colors: const <Color>[
-                                    Color(0xFF4E9CD4),
-                                    Color(0xFF53DDA3),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ).createShader(
-                                  Rect.fromLTWH(0, 0, screenWidth * 0.5, screenHeight * 0.05),
-                                ),
+                  SizedBox(height: screenHeight * 0.04),
+
+                  // Welcome Text
+                  Text(
+                    _isVendorLogin ? 'Vendor Login' : 'Welcome Back!',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  SizedBox(height: 8),
+
+                  Text(
+                    _isVendorLogin 
+                        ? 'Manage your business efficiently'
+                        : 'Sign in to continue',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[400],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  SizedBox(height: screenHeight * 0.06),
+
+                  // Email Field
+                  _buildAnimatedTextFormField(
+                    controller: _emailController,
+                    icon: Icons.email_outlined,
+                    label: 'Email',
+                    hint: 'Enter your email address',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      } else if (value.toLowerCase() != 'admin' && !value.contains('@')) {
+                        return 'Please enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  SizedBox(height: 20),
+
+                  // Password Field
+                  _buildAnimatedTextFormField(
+                    controller: _passwordController,
+                    icon: Icons.lock_outline,
+                    label: 'Password',
+                    hint: 'Enter your password',
+                    obscureText: _obscurePassword,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password is required';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  // Forgot Password
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ForgetPasswordScreen(
+                              isVendor: _isVendorLogin,
                             ),
                           ),
-                          TextSpan(
-                            text: _isVendorLogin
-                                ? 'Grow Your Business!'
-                                : 'Please Log In To Your Account',
-                            style: const TextStyle(
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Color(0xFF53DDA3),
+                      ),
+                      child: Text('Forgot Password?'),
+                    ),
+                  ),
+
+                  SizedBox(height: 30),
+
+                  // Login Button
+                  ElevatedButton(
+                    onPressed: _isPressed ? null : _handleLogin,
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Color(0xFF53DDA3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 3,
+                    ),
+                    child: _isPressed
+                        ? SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Sign In',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  // Sign Up Link
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => DynamicSignup()),
+                      );
+                    },
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 16),
+                        children: [
+                          TextSpan(
+                            text: "Don't have an account? ",
+                            style: TextStyle(color: Colors.grey[400]),
+                          ),
+                          TextSpan(
+                            text: 'Sign Up',
+                            style: TextStyle(
+                              color: Color(0xFF53DDA3),
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.05),
+                  ),
 
-                    // Form Fields
-                    _buildTextFormField(
-                      controller: _emailController,
-                      hintText: 'Enter Your Email',
-                      labelText: 'Email',
-                      icon: Icons.mail_outline_sharp,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        } else if (value.toLowerCase() != 'admin' && !value.contains('@')) {
-                          return 'Invalid email address';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: screenHeight * 0.04),
-                    _buildTextFormField(
-                      controller: _passwordController,
-                      hintText: 'Enter Your Password',
-                      labelText: 'Password',
-                      icon: Icons.lock_outline,
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        return null;
-                      },
-                    ),
-                    // Forgot Password
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ForgetPasswordScreen(
-                                isVendor: _isVendorLogin,
-                              ),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(color: Color(0xFF53DDA3)),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
+                  SizedBox(height: 30),
 
-                    // Login Button
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF4E9CD4), Color(0xFF53DDA3)],
-                            ),
-                          ),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.3,
-                                vertical: screenHeight * 0.015,
-                              ),
-                              backgroundColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            onPressed: _handleLogin,
-                            child: Text(
-                              _isVendorLogin ? 'Sign In' : 'Sign In',
-                              style: const TextStyle(
-                                fontSize: 22,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (_isPressed)
-                          const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                      ],
+                  // Toggle Switch
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Color(0xFF53DDA3), width: 1.5),
                     ),
-                    // Sign Up Section
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => DynamicSignup()),
-                        );
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          children: [
-                            const TextSpan(
-                              text: "Don't have an Account? ",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            TextSpan(
-                              text: _isVendorLogin ? 'Vendor Sign Up' : 'Sign Up!',
-                              style: const TextStyle(
-                                color: Color.fromRGBO(83, 221, 163, 1),
-                                fontSize: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                   SizedBox(height: screenHeight * 0.04,),
-                    // User/Vendor Switch Button
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
-                      decoration: BoxDecoration(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: const Color(0xFF53DDA3)),
-                      ),
-                      child: TextButton(
-                        onPressed: () {
+                        onTap: () {
                           setState(() {
                             _isVendorLogin = !_isVendorLogin;
                           });
                         },
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.2,
-                            vertical: screenHeight * 0.010,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Text(
-                          _isVendorLogin ? 'Switch to User Login' : 'Switch to Vendor Login',
-                          style: const TextStyle(
-                            color: Color(0xFF53DDA3),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _isVendorLogin ? Icons.person : Icons.store,
+                                color: Color(0xFF53DDA3),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                _isVendorLogin 
+                                    ? 'Switch to User Login'
+                                    : 'Switch to Vendor Login',
+                                style: TextStyle(
+                                  color: Color(0xFF53DDA3),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTextFormField({
+  Widget _buildAnimatedTextFormField({
     required TextEditingController controller,
-    required String hintText,
-    required String labelText,
     required IconData icon,
+    required String label,
+    required String hint,
     bool obscureText = false,
+    Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      style: const TextStyle(color: Colors.white),
-      controller: controller,
-      obscureText: obscureText,
-      validator: validator,
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(color: Colors.white),
-        prefixIcon: Icon(icon, color: const Color.fromRGBO(83, 221, 163, 1)),
-        labelText: labelText,
-        labelStyle: const TextStyle(color: Color.fromRGBO(129, 129, 129, 1), fontSize: 18),
-        filled: true,
-        fillColor: const Color.fromRGBO(30, 30, 30, 1),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Colors.white),
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFF2A2A2A),
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscureText,
+        style: TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: Colors.grey),
+          suffixIcon: suffixIcon,
+          labelText: label,
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey[600]),
+          labelStyle: TextStyle(color: Colors.grey[400]),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.transparent,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Colors.white),
-        ),
+        validator: validator,
       ),
     );
   }

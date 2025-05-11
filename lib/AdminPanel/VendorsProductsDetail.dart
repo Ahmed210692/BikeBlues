@@ -240,7 +240,7 @@ class VendorsProductDetailScreen extends StatelessWidget {
             ),
             child: const Center(
               child: Text(
-                'No reviews yet. Be the first to review!',
+                'No reviews yet',
                 style: TextStyle(
                   color: Colors.grey,
                   fontSize: 16,

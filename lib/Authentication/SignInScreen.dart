@@ -1,4 +1,4 @@
-import 'package:bikeblues/Authentication/SignupScreen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,7 +6,11 @@ import '../AdminPanel/Dashboard.dart';
 import '../src/LandingPage.dart';
 import '../Vendor Panel/Vendor_Dashboard.dart';
 import '../model/Vendor_model.dart';
+import '../model/User_model.dart';
+import 'Email Verification.dart';
 import 'ForgetPassword.dart';
+import 'SignupScreen.dart';
+
 
 class UnifiedLoginScreen extends StatefulWidget {
   const UnifiedLoginScreen({super.key});
@@ -15,12 +19,10 @@ class UnifiedLoginScreen extends StatefulWidget {
   State<UnifiedLoginScreen> createState() => _UnifiedLoginScreenState();
 }
 
-class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTickerProviderStateMixin {
+class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
   bool _isPressed = false;
   bool _isVendorLogin = false;
@@ -32,21 +34,12 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
-    );
-    _animationController.forward();
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -62,6 +55,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTick
     );
   }
 
+  // Modify the _handleLogin method in UnifiedLoginScreen
   Future<void> _handleLogin() async {
     if (_isPressed) return;
     if (!_formKey.currentState!.validate()) return;
@@ -81,58 +75,95 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTick
         return;
       }
 
-      // Check if the email exists in vendors collection
-      var vendorsQuery = await FirebaseFirestore.instance
-          .collection('vendors')
+      // Check if user exists in the correct collection first
+      final collection = _isVendorLogin ? 'vendors' : 'users';
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection(collection)
           .where('email', isEqualTo: _emailController.text)
           .get();
 
+      if (querySnapshot.docs.isEmpty) {
+        _showSnackBar('No ${_isVendorLogin ? 'vendor' : 'user'} account found with this email.');
+        setState(() {
+          _isPressed = false;
+        });
+        return;
+      }
+
+      // Sign in with Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      // Check if email is verified
+      if (!userCredential.user!.emailVerified) {
+        _showSnackBar('Please verify your email before logging in. Check your inbox for the verification link.');
+        setState(() {
+          _isPressed = false;
+        });
+        return;
+      }
+
+      // Get the user document
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection(collection)
+          .doc(userCredential.user!.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        await FirebaseAuth.instance.signOut();
+        _showSnackBar('Account data not found. Please contact support.');
+        setState(() {
+          _isPressed = false;
+        });
+        return;
+      }
+
+      // Update emailVerified status in Firestore
+      await FirebaseFirestore.instance
+          .collection(collection)
+          .doc(userCredential.user!.uid)
+          .update({'emailVerified': true});
+
+      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+
       if (_isVendorLogin) {
-        // Vendor Login Flow
-        if (vendorsQuery.docs.isEmpty) {
-          _showSnackBar('No vendor account found with this email.');
-          return;
-        }
-
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
-
-        DocumentSnapshot vendorData = await FirebaseFirestore.instance
-            .collection('vendors')
-            .doc(userCredential.user!.uid)
-            .get();
-            
-        if (vendorData.exists) {
-          Vendor vendor = Vendor.fromMap(vendorData.data() as Map<String, dynamic>);
+        try {
+          Vendor vendor = Vendor.fromMap(userData);
           _showSnackBar('Welcome back!', color: Colors.green);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => VendorDashboard(),
-              settings: RouteSettings(arguments: vendor),
-            ),
-          );
-        } else {
-          _showSnackBar('Vendor information not found.');
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => VendorDashboard(),
+                settings: RouteSettings(arguments: vendor),
+              ),
+            );
+          }
+        } catch (e) {
+          print("Error creating Vendor from Firestore data: $e");
+          print("Data received: $userData");
+          _showSnackBar('Error processing vendor data. Please contact support.');
           await FirebaseAuth.instance.signOut();
         }
       } else {
-        // User Login Flow
-        if (vendorsQuery.docs.isNotEmpty) {
-          _showSnackBar('This account is registered as a Vendor. Please use Vendor Login.');
-          return;
+        try {
+          AppUser user = AppUser.fromMap(userData);
+          _showSnackBar('Welcome back!', color: Colors.green);
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => Landingpage(),
+                settings: RouteSettings(arguments: user),
+              ),
+            );
+          }
+        } catch (e) {
+          print("Error creating AppUser from Firestore data: $e");
+          print("Data received: $userData");
+          _showSnackBar('Error processing user data. Please contact support.');
+          await FirebaseAuth.instance.signOut();
         }
-
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
-
-        _showSnackBar('Welcome back!', color: Colors.green);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => Landingpage()),
-        );
       }
     } on FirebaseAuthException catch (e) {
       String message;
@@ -149,19 +180,24 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTick
         case 'user-disabled':
           message = 'This account has been disabled.';
           break;
+        case 'too-many-requests':
+          message = 'Too many failed login attempts. Please try again later.';
+          break;
         default:
-          message = 'Authentication failed. Please try again.';
+          message = 'Authentication failed: ${e.message}';
       }
       _showSnackBar(message);
     } catch (e) {
-      _showSnackBar('An unexpected error occurred. Please try again.');
+      print("Unexpected error during login: $e");
+      _showSnackBar('An unexpected error occurred: $e');
     } finally {
-      setState(() {
-        _isPressed = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isPressed = false;
+        });
+      }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -180,7 +216,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTick
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(height: screenHeight * 0.08),
-                  
+
                   // Logo or Brand Image could go here
                   Container(
                     height: 100,
@@ -217,7 +253,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTick
                   SizedBox(height: 8),
 
                   Text(
-                    _isVendorLogin 
+                    _isVendorLogin
                         ? 'Manage your business efficiently'
                         : 'Sign in to continue',
                     style: TextStyle(
@@ -308,21 +344,21 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTick
                     ),
                     child: _isPressed
                         ? SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                         : Text(
-                            'Sign In',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                      'Sign In',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
 
                   SizedBox(height: 20),
@@ -382,7 +418,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> with SingleTick
                               ),
                               SizedBox(width: 8),
                               Text(
-                                _isVendorLogin 
+                                _isVendorLogin
                                     ? 'Switch to User Login'
                                     : 'Switch to Vendor Login',
                                 style: TextStyle(

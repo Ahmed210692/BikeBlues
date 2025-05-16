@@ -1,44 +1,45 @@
-class AppUser {
-  String name;
-  String id;
-  String email;
-  String password;
-  String address;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-  String phoneNumber;
+class AppUser {
+  final String id;
+  final String name;
+  final String email;
+  final String address;
+  final String phoneNumber;
+  final bool emailVerified;
 
 
   AppUser({
-    required this.name,
     required this.id,
+    required this.name,
     required this.email,
-    required this.password,
     required this.address,
     required this.phoneNumber,
+    required this.emailVerified,
 
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'id': id,
-      'email': email,
-      'password': password,
-      'address': address,
-      'phoneNumber': phoneNumber,
-
-    };
-  }
-
   factory AppUser.fromMap(Map<String, dynamic> map) {
     return AppUser(
-      name: map['name'],
-      id: map['id'],
-      email: map['email'],
-      password: map['password'],
-      address: map['address'],
-      phoneNumber: map['phoneNumber'],
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      email: map['email'] ?? '',
+      address: map['address'] ?? '',
+      phoneNumber: map['phoneNumber'] ?? '',
+      emailVerified: map['emailVerified'] ?? false,
 
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'address': address,
+      'phoneNumber': phoneNumber,
+      'emailVerified': emailVerified,
+
+    };
   }
 }

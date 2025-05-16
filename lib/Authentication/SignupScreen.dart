@@ -5,8 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import '../model/User_model.dart';
-import '../model/Vendor_model.dart';
+
 import 'Email Verification.dart';
 
 class DynamicSignup extends StatefulWidget {
@@ -72,6 +71,8 @@ class _DynamicSignupState extends State<DynamicSignup> {
     return querySnapshot.docs.isEmpty;
   }
 
+  // Modify the registerUser and registerVendor methods in DynamicSignup
+
   Future<void> registerUser() async {
     try {
       final isUniqueInVendors = await isEmailUnique(_emailController.text, 'vendors');
@@ -82,20 +83,13 @@ class _DynamicSignupState extends State<DynamicSignup> {
         return;
       }
 
+      // Create user with email and password
       final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => EmailVerificationScreen(
-              email: _emailController.text,
-              role: 'User'
-          ),
-        ),
-      );
-
+      // Create user document in Firestore first
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -105,8 +99,29 @@ class _DynamicSignupState extends State<DynamicSignup> {
         'email': _emailController.text,
         'address': _addressController.text,
         'phoneNumber': _phoneNumberController.text,
-        'emailVerified': false
+        'emailVerified': false,
       });
+
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registration successful! Please verify your email.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Navigate to email verification screen
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationScreen(
+              email: _emailController.text,
+              role: 'User',
+            ),
+          ),
+        );
+      }
 
     } on FirebaseAuthException catch (e) {
       String message;
@@ -114,10 +129,26 @@ class _DynamicSignupState extends State<DynamicSignup> {
         case 'email-already-in-use':
           message = 'The email is already registered as a user.';
           break;
+        case 'weak-password':
+          message = 'The password provided is too weak.';
+          break;
+        case 'invalid-email':
+          message = 'The email address is not valid.';
+          break;
         default:
           message = 'An error occurred: ${e.message}';
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      print("Error in registerUser: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An unexpected error occurred: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -139,20 +170,13 @@ class _DynamicSignupState extends State<DynamicSignup> {
         });
       }
 
+      // Create user with email and password
       final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => EmailVerificationScreen(
-              email: _emailController.text,
-              role: 'Vendor'
-          ),
-        ),
-      );
-
+      // Create vendor document in Firestore first
       await FirebaseFirestore.instance
           .collection('vendors')
           .doc(userCredential.user!.uid)
@@ -164,8 +188,30 @@ class _DynamicSignupState extends State<DynamicSignup> {
         'phoneNumber': _phoneNumberController.text,
         'shopName': _shopNameController.text,
         'storeImage': storeImageUrl,
-        'emailVerified': false
+        'emailVerified': false,
       });
+
+
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registration successful! Please verify your email.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Navigate to email verification screen
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationScreen(
+              email: _emailController.text,
+              role: 'Vendor',
+            ),
+          ),
+        );
+      }
 
     } on FirebaseAuthException catch (e) {
       String message;
@@ -173,12 +219,49 @@ class _DynamicSignupState extends State<DynamicSignup> {
         case 'email-already-in-use':
           message = 'The email is already registered as a vendor.';
           break;
+        case 'weak-password':
+          message = 'The password provided is too weak.';
+          break;
+        case 'invalid-email':
+          message = 'The email address is not valid.';
+          break;
         default:
           message = 'An error occurred: ${e.message}';
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      print("Error in registerVendor: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An unexpected error occurred: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+
+// Update _register method to prevent navigation and let the registration methods handle it
+//   void _register() async {
+//     if (_formKey.currentState!.validate()) {
+//       if (selectedRole == 'Vendor' && _storeImage == null) {
+//         setState(() {
+//           _imageError = 'Please upload an image.';
+//         });
+//         return;
+//       }
+//
+//       if (selectedRole == 'User ') {
+//         await registerUser();
+//       } else if (selectedRole == 'Vendor') {
+//         await registerVendor();
+//       }
+//
+//       // Remove this line so the navigation in registerUser/registerVendor can work
+//       // Navigator.of(context).pop();
+//     }
+//   }
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
@@ -189,13 +272,13 @@ class _DynamicSignupState extends State<DynamicSignup> {
         return;
       }
 
-      if (selectedRole == 'User ') {
+      if (selectedRole == 'User') {
         await registerUser();
       } else if (selectedRole == 'Vendor') {
         await registerVendor();
       }
 
-      Navigator.of(context).pop();
+     // Navigator.of(context).pop();
     }
   }
 
@@ -294,17 +377,17 @@ class _DynamicSignupState extends State<DynamicSignup> {
                             border: InputBorder.none,
                           ),
                           value: selectedRole,
-                          items: ['User ', 'Vendor']
+                          items: ['User', 'Vendor']
                               .map((role) => DropdownMenuItem(
-                                    value: role,
-                                    child: Text(
-                                      role,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ))
+                            value: role,
+                            child: Text(
+                              role,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ))
                               .toList(),
                           onChanged: (value) {
                             setState(() {
@@ -312,7 +395,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
                             });
                           },
                           validator: (value) =>
-                              value == null ? 'Please select a role' : null,
+                          value == null ? 'Please select a role' : null,
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.03),
@@ -423,51 +506,51 @@ class _DynamicSignupState extends State<DynamicSignup> {
                           ),
                           child: _storeImage == null
                               ? TextButton(
-                                  onPressed: pickImage,
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(horizontal: 20),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.cloud_upload_outlined,
-                                        color: Color.fromRGBO(83, 221, 163, 1),
-                                      ),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        'Upload Profile Image',
-                                        style: TextStyle(
-                                          color: Color.fromRGBO(83, 221, 163, 1),
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      if (_imageError != null) ...[
-                                        Spacer(),
-                                        Text(
-                                          _imageError!,
-                                          style: TextStyle(
-                                            color: Colors.red.shade300,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                )
-                              : GestureDetector(
-                                  onTap: pickImage,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Image.file(
-                                      File(_storeImage!),
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                    ),
+                            onPressed: pickImage,
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.cloud_upload_outlined,
+                                  color: Color.fromRGBO(83, 221, 163, 1),
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Upload Profile Image',
+                                  style: TextStyle(
+                                    color: Color.fromRGBO(83, 221, 163, 1),
+                                    fontSize: 16,
                                   ),
                                 ),
+                                if (_imageError != null) ...[
+                                  Spacer(),
+                                  Text(
+                                    _imageError!,
+                                    style: TextStyle(
+                                      color: Colors.red.shade300,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          )
+                              : GestureDetector(
+                            onTap: pickImage,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.file(
+                                File(_storeImage!),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                       SizedBox(height: screenHeight * 0.03),

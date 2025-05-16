@@ -106,7 +106,7 @@ class _LandingpageState extends State<Landingpage> with SingleTickerProviderStat
                   onPressed: () {
                     _controller.dispose();
                     Navigator.pop(context);
-                    _launchURL('https://gzip-build-five.vercel.app/');
+                    _launchURL('http://127.0.0.1:5500/builds/index.html');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,

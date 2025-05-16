@@ -66,23 +66,23 @@ class _WelcomeState extends State<Welcome> {
                   child: Column(
                     children: [
                       // Logo or Icon
-                      Container(
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(0xFF4E9CD4),
-                              Color(0xFF53DDA3),
-                            ],
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.motorcycle_outlined,
-                          size: 50,
-                          color: Colors.white,
-                        ),
-                      ),
+                      // Container(
+                      //   padding: EdgeInsets.all(20),
+                      //   decoration: BoxDecoration(
+                      //     shape: BoxShape.circle,
+                      //     gradient: LinearGradient(
+                      //       colors: [
+                      //         Color(0xFF4E9CD4),
+                      //         Color(0xFF53DDA3),
+                      //       ],
+                      //     ),
+                      //   ),
+                      //   child: Icon(
+                      //     Icons.motorcycle_outlined,
+                      //     size: 50,
+                      //     color: Colors.white,
+                      //   ),
+                      // ),
                       
                       SizedBox(height: h * 0.03),
                       

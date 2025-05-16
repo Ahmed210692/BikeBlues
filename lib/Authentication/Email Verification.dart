@@ -22,61 +22,106 @@ class EmailVerificationScreen extends StatefulWidget {
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   bool isEmailVerified = false;
   Timer? _timer;
+  bool _isResending = false;
+  int _resendCount = 0;
+  final int _maxResendAttempts = 3;
 
   @override
   void initState() {
     super.initState();
+    _checkEmailVerified();
+    _startVerificationCheck();
+  }
 
-    // Send verification email immediately
-    _sendVerificationEmail();
-
-    // Check verification status periodically
+  void _startVerificationCheck() {
     _timer = Timer.periodic(
-        const Duration(seconds: 3),
-            (_) => _checkEmailVerified()
+      const Duration(seconds: 3),
+          (_) => _checkEmailVerified(),
     );
   }
 
   Future<void> _sendVerificationEmail() async {
+    if (_isResending || _resendCount >= _maxResendAttempts) return;
+
+    setState(() {
+      _isResending = true;
+    });
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
+        _resendCount++;
 
-        // Show success snackbar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Verification email sent to ${widget.email}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Verification email sent to ${widget.email}'),
-            backgroundColor: Colors.green,
+            content: Text('Failed to send verification email: $e'),
+            backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to send verification email: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isResending = false;
+        });
+      }
     }
   }
 
   Future<void> _checkEmailVerified() async {
-    // Reload the user to get the latest verification status
-    await FirebaseAuth.instance.currentUser?.reload();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
 
-    final user = FirebaseAuth.instance.currentUser;
+      await user.reload();
+      final updatedUser = FirebaseAuth.instance.currentUser;
 
-    if (user != null && user.emailVerified) {
-      // Stop the timer
-      _timer?.cancel();
+      if (updatedUser != null && updatedUser.emailVerified) {
+        _timer?.cancel();
 
-      // Navigate to login screen based on role
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => UnifiedLoginScreen(), // Assuming you have this screen
-        ),
-      );
+        // Update Firestore document
+        final collection = widget.role == 'Vendor' ? 'vendors' : 'users';
+        await FirebaseFirestore.instance
+            .collection(collection)
+            .doc(user.uid)
+            .update({'emailVerified': true});
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email verified successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => UnifiedLoginScreen(),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error checking verification status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -124,14 +169,27 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _sendVerificationEmail,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromRGBO(83, 221, 163, 1),
+              if (_resendCount < _maxResendAttempts) ...[
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: _isResending ? null : _sendVerificationEmail,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromRGBO(83, 221, 163, 1),
+                    disabledBackgroundColor: Colors.grey,
+                  ),
+                  child: Text(_isResending ? 'Sending...' : 'Resend Verification Email'),
                 ),
-                child: const Text('Resend Verification Email'),
-              ),
+                if (_resendCount > 0) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Resend attempts remaining: ${_maxResendAttempts - _resendCount}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ],
             ],
           ),
         ),

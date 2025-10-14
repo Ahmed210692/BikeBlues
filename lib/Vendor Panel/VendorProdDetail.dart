@@ -22,6 +22,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late TextEditingController _priceController;
   late TextEditingController _descriptionController;
   final ScrollController _scrollController = ScrollController();
+  late String _category;
+  final List<String> _categories = ['Engine', 'Electrical', 'Chassis', 'Accessories'];
+
 
   File? _image;
   String? _imageUrl;
@@ -34,6 +37,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _priceController = TextEditingController(text: widget.productData['price'].toString());
     _descriptionController = TextEditingController(text: widget.productData['description']);
     _imageUrl = widget.productData['imageUrl'];
+    _category = widget.productData['category'] ?? 'Engine';
   }
 
   Future<void> _pickImage() async {
@@ -72,6 +76,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         'price': double.parse(_priceController.text),
         'description': _descriptionController.text,
         'imageUrl': imageUrl,
+        'category': _category,
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -353,6 +358,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _isEditMode
+                            ? DropdownButtonFormField<String>(
+                          value: _category,
+                          decoration: InputDecoration(
+                            labelText: 'Category',
+                            labelStyle: TextStyle(color: Colors.white70),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white24),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white24),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                          ),
+                          items: _categories.map((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(category, style: TextStyle(color: Colors.white)),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _category = newValue!;
+                            });
+                          },
+                        )
+                            : Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text(
+                            'Category: $_category',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
                         _isEditMode
                             ? TextFormField(
                                 controller: _nameController,

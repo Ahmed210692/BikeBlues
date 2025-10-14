@@ -98,6 +98,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final h = MediaQuery.of(context).size.height;
+    final w = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
@@ -111,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     children: [
                       Container(
-                        margin: EdgeInsets.only(right: 10),
+                        margin: EdgeInsets.only(right: w * 0.02),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(15),
@@ -133,14 +136,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(
                         'Personal Information',
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 25,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 30),
+                  SizedBox(height: h * 0.04),
                   Form(
                     key: _formKey,
                     child: Column(
@@ -151,28 +154,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           icon: Icons.person,
                           readOnly: !_isEditing,
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: h * 0.02),
                         buildTextField(
                           controller: addressController,
                           label: 'Address',
                           icon: Icons.home,
                           readOnly: !_isEditing,
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: h * 0.02),
                         buildTextField(
                           controller: emailController,
                           label: 'Email',
                           icon: Icons.email,
                           readOnly: !_isEditing,
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: h * 0.02),
                         buildTextField(
                           controller: phoneNumberController,
                           label: 'Phone Number',
                           icon: Icons.phone,
                           readOnly: !_isEditing,
                         ),
-                        SizedBox(height: 40),
+                        SizedBox(height: h * 0.1),
                         Container(
                           width: double.infinity,
                           height: 55,

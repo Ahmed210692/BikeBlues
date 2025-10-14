@@ -51,7 +51,7 @@ class _SplashscreenState extends State<Splashscreen> with SingleTickerProviderSt
               child: Transform.scale(
                 scale: scale, // Apply the scale transformation
                 child: Image.asset(
-                  'assets/images/defaultLogo.png',
+                  'assets/images/bikeblues.png',
                 ),
               ),
             );

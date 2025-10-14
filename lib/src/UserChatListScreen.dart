@@ -50,6 +50,8 @@ class _UserChatListScreenState extends State<UserChatListScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
+    final h = MediaQuery.of(context).size.height;
+    final w = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Colors.grey[50],

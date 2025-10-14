@@ -4,6 +4,7 @@ class Product {
   double price;
   String description;
   String imageUrl;
+  String category; // Added category field
 
   Product({
     required this.id,
@@ -11,6 +12,7 @@ class Product {
     required this.price,
     required this.description,
     required this.imageUrl,
+    required this.category, // Added to constructor
   });
 
   Map<String, dynamic> toMap() {
@@ -19,6 +21,7 @@ class Product {
       'price': price,
       'description': description,
       'imageUrl': imageUrl,
+      'category': category, // Added to map
     };
   }
 
@@ -29,6 +32,7 @@ class Product {
       price: map['price'],
       description: map['description'],
       imageUrl: map['imageUrl'],
+      category: map['category'], // Added to factory
     );
   }
 }

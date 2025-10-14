@@ -21,6 +21,9 @@ class _VendorDashboardState extends State<VendorDashboard> {
   int _selectedIndex = 0;
   late Vendor? _vendor;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  String _selectedCategory = 'All'; // Default to show all categories
+  final List<String> _categories = ['All', 'Engine', 'Electrical', 'Chassis', 'Accessories'];
+
 
   @override
   void didChangeDependencies() {
@@ -142,6 +145,36 @@ class _VendorDashboardState extends State<VendorDashboard> {
         false;
   }
 
+  Widget _buildCategoryChips() {
+    return SizedBox(
+      height: 50,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final category = _categories[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ChoiceChip(
+              label: Text(category),
+              selected: _selectedCategory == category,
+              selectedColor: Color(0xFF53DDA3),
+              onSelected: (selected) {
+                setState(() {
+                  _selectedCategory = selected ? category : 'All';
+                });
+              },
+              labelStyle: TextStyle(
+                color: _selectedCategory == category ? Colors.black : Colors.white,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+
   Widget _buildHomeScreen() {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -197,7 +230,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
                 ),
               ],
             ),
-            SizedBox(height: 32),
+            SizedBox(height: screenHeight * 0.03),
             Container(
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.1),
@@ -220,6 +253,8 @@ class _VendorDashboardState extends State<VendorDashboard> {
                 },
               ),
             ),
+            SizedBox(height: screenHeight * 0.02,),
+            _buildCategoryChips(),
             SizedBox(height: 24),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
@@ -239,7 +274,10 @@ class _VendorDashboardState extends State<VendorDashboard> {
 
                   var products = snapshot.data!.docs.where((product) {
                     String productName = product['name']?.toLowerCase() ?? '';
-                    return productName.contains(searchQuery);
+                    bool matchesSearch = productName.contains(searchQuery);
+                    bool matchesCategory = _selectedCategory == 'All' ||
+                        product['category'] == _selectedCategory;
+                    return matchesSearch && matchesCategory;
                   }).toList();
 
                   if (products.isEmpty) {
@@ -301,12 +339,12 @@ class _VendorDashboardState extends State<VendorDashboard> {
                                 child: Image.network(
                                   product['imageUrl'],
                                   width: double.infinity,
-                                  height: 130, // Reduced from 140 to 130
+                                  height: screenHeight * 0.13, // Reduced from 140 to 130
                                   fit: BoxFit.cover,
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.all(8.0), // Reduced padding from 12 to 8
+                                padding: const EdgeInsets.all(4.0), // Reduced padding from 12 to 8
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -320,14 +358,14 @@ class _VendorDashboardState extends State<VendorDashboard> {
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    SizedBox(height: 2), // Reduced from 8 to 4
+                                   // SizedBox(height: screenHeight * 0.001), // Reduced from 8 to 4
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
                                           'RS ${product['price']}',
                                           style: TextStyle(
-                                            fontSize: 14, // Reduced from 16 to 14
+                                            fontSize: 12, // Reduced from 16 to 14
                                             fontWeight: FontWeight.bold,
                                             color: Color(0xFF53DDA3),
                                           ),

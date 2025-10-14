@@ -2,6 +2,8 @@ import 'package:bikeblues/src/PurchaseParts.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'CustomizationView.dart';
+
 class Landingpage extends StatefulWidget {
   const Landingpage({super.key});
 
@@ -30,6 +32,8 @@ class _LandingpageState extends State<Landingpage> with SingleTickerProviderStat
       );
     }
   }
+
+  // Remove the _launchURL method entirely
 
   void _showCustomizationDialog() {
     _controller = AnimationController(
@@ -65,11 +69,11 @@ class _LandingpageState extends State<Landingpage> with SingleTickerProviderStat
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10.0,
-                  offset: Offset(0.0, 10.0),
-                ),
+              BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10.0,
+              offset: Offset(0.0, 10.0),
+              )
               ],
             ),
             child: Column(
@@ -88,11 +92,11 @@ class _LandingpageState extends State<Landingpage> with SingleTickerProviderStat
                   turns: _rotationAnimation,
                   child: Icon(
                     Icons.screen_rotation,
-                    size: 80,
+                    size: 70,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: 10),
                 Text(
                   'For the best customization experience, please rotate your device to landscape mode.',
                   textAlign: TextAlign.center,
@@ -106,12 +110,19 @@ class _LandingpageState extends State<Landingpage> with SingleTickerProviderStat
                   onPressed: () {
                     _controller.dispose();
                     Navigator.pop(context);
-                    _launchURL('http://127.0.0.1:5500/builds/index.html');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CustomizationWebView(
+                          url: 'https://gzip-build-five.vercel.app/',
+                        ),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Color(0xFF4E9CD4),
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),

@@ -22,6 +22,10 @@ class _DynamicSignupState extends State<DynamicSignup> {
   String? _imageError;
   String? _uploadedImageUrl;
   bool _obscurePassword = true;
+  bool _hasUpperCase = false;
+  bool _hasDigit = false;
+  bool _hasSpecialChar = false;
+  FocusNode _passwordFocusNode = FocusNode();
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -31,9 +35,17 @@ class _DynamicSignupState extends State<DynamicSignup> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _shopNameController = TextEditingController();
   final TextEditingController _vendorNameController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_updatePasswordStrength);
+    // ... other initializations ...
+  }
 
   @override
   void dispose() {
+    _passwordFocusNode.dispose();
+    _passwordController.removeListener(_updatePasswordStrength);
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -45,6 +57,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
     super.dispose();
   }
 
+
   Future<void> pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
@@ -53,6 +66,15 @@ class _DynamicSignupState extends State<DynamicSignup> {
         _imageError = null;
       });
     }
+  }
+
+  void _updatePasswordStrength() {
+    final password = _passwordController.text;
+    setState(() {
+      _hasUpperCase = RegExp(r'[A-Z]').hasMatch(password);
+      _hasDigit = RegExp(r'[0-9]').hasMatch(password);
+      _hasSpecialChar = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
+    });
   }
 
   Future<String> uploadImage(File image) async {
@@ -242,26 +264,6 @@ class _DynamicSignupState extends State<DynamicSignup> {
     }
   }
 
-// Update _register method to prevent navigation and let the registration methods handle it
-//   void _register() async {
-//     if (_formKey.currentState!.validate()) {
-//       if (selectedRole == 'Vendor' && _storeImage == null) {
-//         setState(() {
-//           _imageError = 'Please upload an image.';
-//         });
-//         return;
-//       }
-//
-//       if (selectedRole == 'User ') {
-//         await registerUser();
-//       } else if (selectedRole == 'Vendor') {
-//         await registerVendor();
-//       }
-//
-//       // Remove this line so the navigation in registerUser/registerVendor can work
-//       // Navigator.of(context).pop();
-//     }
-//   }
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
@@ -309,7 +311,59 @@ class _DynamicSignupState extends State<DynamicSignup> {
     if (value.length < 6) {
       return 'Password must be at least 6 characters';
     }
+    if (!_hasUpperCase) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!_hasDigit) {
+      return 'Password must contain at least one digit';
+    }
+    if (!_hasSpecialChar) {
+      return 'Password must contain at least one special character';
+    }
     return null;
+  }
+  Widget _buildPasswordValidation() {
+    return Visibility(
+      visible: _passwordController.text.isNotEmpty,
+      child: Container(
+        padding: EdgeInsets.all(12),
+        margin: EdgeInsets.only(top: 8),
+        decoration: BoxDecoration(
+          color: Color.fromRGBO(40, 40, 40, 1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Column(
+          children: [
+            _buildValidationRow('One uppercase letter', _hasUpperCase),
+            SizedBox(height: 4),
+            _buildValidationRow('One digit', _hasDigit),
+            SizedBox(height: 4),
+            _buildValidationRow('One special character', _hasSpecialChar),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildValidationRow(String text, bool isValid) {
+    return Row(
+      children: [
+        Icon(
+          isValid ? Icons.check_circle : Icons.cancel,
+          color: isValid ? Colors.green : Colors.red,
+          size: 20,
+        ),
+        SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -399,7 +453,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.03),
-                      if (selectedRole == 'User ') ...[
+                      if (selectedRole == 'User') ...[
                         _buildTextFormField(
                           controller: _nameController,
                           validator: (value) {
@@ -451,11 +505,10 @@ class _DynamicSignupState extends State<DynamicSignup> {
                         hintText: 'Enter Your Password',
                         labelText: 'Password',
                         obscureText: _obscurePassword,
+                        focusNode: _passwordFocusNode,
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
+                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
                             color: Colors.white70,
                           ),
                           onPressed: () {
@@ -465,6 +518,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
                           },
                         ),
                       ),
+                      _buildPasswordValidation(),
                       SizedBox(height: screenHeight * 0.02),
                       _buildTextFormField(
                         controller: _addressController,
@@ -488,7 +542,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
                       if (selectedRole == 'Vendor') ...[
                         SizedBox(height: screenHeight * 0.02),
                         Container(
-                          height: 56, // Same height as text fields
+                          height: screenHeight * 0.2, // Same height as text fields
                           decoration: BoxDecoration(
                             color: Color.fromRGBO(40, 40, 40, 1),
                             borderRadius: BorderRadius.circular(18),
@@ -513,31 +567,35 @@ class _DynamicSignupState extends State<DynamicSignup> {
                                 borderRadius: BorderRadius.circular(18),
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.cloud_upload_outlined,
-                                  color: Color.fromRGBO(83, 221, 163, 1),
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Upload Profile Image',
-                                  style: TextStyle(
+                            child: Center(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.cloud_upload_outlined,
                                     color: Color.fromRGBO(83, 221, 163, 1),
-                                    fontSize: 16,
                                   ),
-                                ),
-                                if (_imageError != null) ...[
-                                  Spacer(),
-                                  Text(
-                                    _imageError!,
-                                    style: TextStyle(
-                                      color: Colors.red.shade300,
-                                      fontSize: 14,
+                                  SizedBox(width: 10),
+                                  Center(
+                                    child: Text(
+                                            'Upload Profile Image',
+                                      style: TextStyle(
+                                        color: Color.fromRGBO(83, 221, 163, 1),
+                                        fontSize: 16,
+                                      ),
                                     ),
                                   ),
+                                  if (_imageError != null) ...[
+                                    Spacer(),
+                                    Text(
+                                      _imageError!,
+                                      style: TextStyle(
+                                        color: Colors.red.shade300,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           )
                               : GestureDetector(
@@ -619,6 +677,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
     );
   }
 
+
   Widget _buildTextFormField({
     required TextEditingController controller,
     required String? Function(String?) validator,
@@ -627,6 +686,7 @@ class _DynamicSignupState extends State<DynamicSignup> {
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     Widget? suffixIcon,
+    FocusNode? focusNode,
   }) {
     return Container(
       decoration: BoxDecoration(

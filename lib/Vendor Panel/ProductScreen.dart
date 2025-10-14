@@ -22,6 +22,8 @@ class _ProductScreenState extends State<ProductScreen> {
   String _description = '';
   File? _image;
   String? _imageError;
+  String _category = 'Engine'; // Default category
+  final List<String> _categories = ['Engine', 'Electrical', 'Chassis', 'Accessories'];
 
   Future<void> _pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -68,6 +70,7 @@ class _ProductScreenState extends State<ProductScreen> {
         'description': _description,
         'price': _price,
         'imageUrl': imageUrl,
+        'category': _category, // Added category
         'vendorId': user?.uid,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -250,10 +253,48 @@ class _ProductScreenState extends State<ProductScreen> {
                       ),
                     ),
                     SizedBox(height: 32),
-
+                    DropdownButtonFormField<String>(
+                      value: _category,
+                      decoration: InputDecoration(
+                        labelText: 'Category',
+                        labelStyle: TextStyle(color: Colors.white),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(width: 2, color: Colors.white),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.white, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.white, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.1),
+                      ),
+                      items: _categories.map((String category) {
+                        return DropdownMenuItem<String>(
+                          value: category,
+                          child: Text(category, style: TextStyle(color: Colors.black)),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _category = newValue!;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please select a category';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 24,),
                     // Product Name Field
                     TextFormField(
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.black),
                       decoration: InputDecoration(
                         labelText: 'Product Name',
                         hintText: 'Enter product name',
@@ -282,7 +323,7 @@ class _ProductScreenState extends State<ProductScreen> {
 
                     // Price Field
                     TextFormField(
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.black),
                       decoration: InputDecoration(
                         labelText: 'Price',
                         hintText: 'Enter product price',
@@ -313,7 +354,7 @@ class _ProductScreenState extends State<ProductScreen> {
 
                     // Description Field
                     TextFormField(
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.black),
                       decoration: InputDecoration(
                         labelText: 'Description',
                         hintText: 'Enter product description',
